@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>publish-pipeline</artifactId>
+        <artifactId>data-pipeline</artifactId>
         <groupId>org.sunbird</groupId>
         <version>1.0</version>
     </parent>
@@ -11,6 +11,22 @@
     <artifactId>questionset-publish</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
+
+    <repositories>
+        <repository>
+            <id>my-local-repo</id>
+            <url>file://${user.home}/.m2/repository</url>
+        </repository>
+        <repository>
+            <id>apache-releases</id>
+            <url>https://repository.apache.org/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>scala-tools.org</id>
+            <name>Scala-tools Maven2 Repository</name>
+            <url>https://oss.sonatype.org/content/groups/scala-tools</url>
+        </repository>
+    </repositories>
 
     <properties>
         <encoding>UTF-8</encoding>
