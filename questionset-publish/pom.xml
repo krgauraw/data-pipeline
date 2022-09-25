@@ -51,11 +51,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.datastax.oss/java-driver-core -->
         <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-core</artifactId>
+            <version>4.14.1</version>
+        </dependency>
+
+        <!--<dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
             <version>3.11.0</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.sunbird</groupId>
             <artifactId>publish-core</artifactId>
