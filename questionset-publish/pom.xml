@@ -95,7 +95,6 @@
             <artifactId>flink-test-utils_${scala.version}</artifactId>
             <version>${flink.version}</version>
             <scope>test</scope>
-            <classifier>tests</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
