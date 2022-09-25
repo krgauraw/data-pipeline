@@ -41,14 +41,18 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.sunbird</groupId>
-            <artifactId>publish-core</artifactId>
-            <version>1.0.0</version>
-            <type>jar</type>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>org.sunbird</groupId>
-            <artifactId>jobs-core</artifactId>
+            <artifactId>publish-core</artifactId>
             <version>1.0.0</version>
             <type>jar</type>
         </dependency>
