@@ -56,6 +56,12 @@
             <artifactId>jobs-core</artifactId>
             <version>1.0.0</version>
             <type>jar</type>
+            <exclusions>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>joda-time</groupId>
@@ -72,6 +78,10 @@
                 <exclusion>
                     <artifactId>jackson-module-scala_${scala.version}</artifactId>
                     <groupId>com.fasterxml.jackson.module</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -112,6 +122,12 @@
             <artifactId>cassandra-unit</artifactId>
             <version>3.11.2.0</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
