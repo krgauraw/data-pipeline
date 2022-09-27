@@ -28,7 +28,6 @@
             <groupId>org.sunbird</groupId>
             <artifactId>publish-core</artifactId>
             <version>1.0.0</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>joda-time</groupId>

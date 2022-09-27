@@ -58,3 +58,9 @@ flink_libraries_log_level: ERROR
 
 ### QuestionSet Publish Config
 master_category_validation_enabled: "Yes"
+inquiry_schema_base_path: "{{ kp_schema_base_path }}"
+inquiry_assessment_publish_kafka_topic_name: "{{ env_name }}.assessment.publish.request"
+inquiry_assessment_post_publish_kafka_topic_name: "{{ env_name }}.assessment.postpublish.request"
+inquiry_assessment_publish_group: "{{ env_name }}-questionset-publish-group"
+question_keyspace_name: "{{instance}}_question_store"
+hierarchy_keyspace_name: "{{instance}}_hierarchy_store"

@@ -18,6 +18,7 @@
     <url>https://inquiry.sunbird.org/</url>
 
     <modules>
+        <module>jobs-core</module>
         <module>publish-pipeline</module>
     </modules>
 
