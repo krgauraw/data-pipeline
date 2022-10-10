@@ -39,7 +39,7 @@ producer_max_request_size: 1572864
 
 ### class name vars
 flink_job_names:
-  questionset-publish:
+  async-questionset-publish:
     job_class_name: 'org.sunbird.job.questionset.task.QuestionSetPublishStreamTask'
     replica: 1
     jobmanager_memory: 2048m

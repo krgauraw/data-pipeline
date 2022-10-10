@@ -115,8 +115,8 @@ base_config: |
         itemset = "2.0"
       }
     }
-questionset-publish:
-  questionset-publish: |+
+async-questionset-publish:
+  async-questionset-publish: |+
     include file("/data/flink/conf/base-config.conf")
     kafka {
       input.topic = "{{ inquiry_assessment_publish_kafka_topic_name }}"
@@ -145,9 +145,9 @@ questionset-publish:
     master.category.validation.enabled ="{{ master_category_validation_enabled }}"
 
   flink-conf: |+
-    jobmanager.memory.flink.size: {{ flink_job_names['questionset-publish'].jobmanager_memory }}
-    taskmanager.memory.flink.size: {{ flink_job_names['questionset-publish'].taskmanager_memory }}
-    taskmanager.numberOfTaskSlots: {{ flink_job_names['questionset-publish'].taskslots }}
+    jobmanager.memory.flink.size: {{ flink_job_names['async-questionset-publish'].jobmanager_memory }}
+    taskmanager.memory.flink.size: {{ flink_job_names['async-questionset-publish'].taskmanager_memory }}
+    taskmanager.numberOfTaskSlots: {{ flink_job_names['async-questionset-publish'].taskslots }}
     parallelism.default: 1
     jobmanager.execution.failover-strategy: region
     taskmanager.memory.network.fraction: 0.1
