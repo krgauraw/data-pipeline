@@ -170,6 +170,15 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.google.common.util</pattern>
+                                    <shadedPattern>com.shaded.google.common.util</shadedPattern>
+                                    <includes>
+                                        <include>com.google.common.util.*</include>
+                                    </includes>
+                                </relocation>
+                            </relocations>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
