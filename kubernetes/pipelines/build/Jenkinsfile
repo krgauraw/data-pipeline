@@ -16,19 +16,6 @@ node('build-slave') {
                         println(ANSI_BOLD + ANSI_GREEN + "Found environment variable named hub_org with value as: " + hub_org + ANSI_NORMAL)
                 }
                 cleanWs()
-                dir('knowlg-core') {
-                    stage('Checkout Core Components') {
-                    checkout([$class: 'GitSCM', branches: [[name: params.core_release_tag]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true]], submoduleCfg: [], userRemoteConfigs: [[url: params.core_repo_url]]])
-                    core_repo_commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                 }
-
-                 stage('Build Core Components') {
-                    env.NODE_ENV = "build"
-                    print "Environment will be : ${env.NODE_ENV}"
-                    sh '/opt/apache-maven-3.6.3/bin/mvn3.6 -v'
-                    sh '/opt/apache-maven-3.6.3/bin/mvn3.6 clean install -DskipTests -Pknowlg-core'
-                 }
-                }
                 dir('data-pipeline') {
                    checkout scm
                    commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
