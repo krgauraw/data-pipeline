@@ -189,7 +189,8 @@ spec:
           "-Dmetrics.reporter.prom.host={{ .Release.Name }}-taskmanager",
           "-Dmetrics.reporter.prom.port=9251-9260",
           "-Djobmanager.rpc.address={{ .Release.Name }}-jobmanager",
-          "-Dtaskmanager.rpc.port={{ .Values.taskmanager.rpc_port }}"]
+          "-Dtaskmanager.rpc.port={{ .Values.taskmanager.rpc_port }}",
+          "-Dclassloader.parent-first-patterns.additional=com.google.common.;"]
         ports:
         - containerPort: {{ .Values.taskmanager.rpc_port }}
           name: rpc
