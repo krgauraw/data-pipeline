@@ -28,7 +28,8 @@ spec:
           "-Djobmanager.rpc.address=${JOB_NAME}-jobmanager",
           "-Dtaskmanager.rpc.port=6122",
           "-Dtaskmanager.heap.size=1024m",
-          "-Dtaskmanager.numberOfTaskSlots=2"]
+          "-Dtaskmanager.numberOfTaskSlots=2",
+          "-Dclassloader.parent-first-patterns.additional=com.google.common.;"]
         ports:
         - containerPort: 6122
           name: rpc
