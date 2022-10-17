@@ -190,6 +190,7 @@ spec:
           "-Dmetrics.reporter.prom.port=9251-9260",
           "-Djobmanager.rpc.address={{ .Release.Name }}-jobmanager",
           "-Dtaskmanager.rpc.port={{ .Values.taskmanager.rpc_port }}",
+          "-Dclassloader.resolve-order=parent-first",
           "-Dclassloader.parent-first-patterns.additional=com.google.common.;"]
         ports:
         - containerPort: {{ .Values.taskmanager.rpc_port }}
