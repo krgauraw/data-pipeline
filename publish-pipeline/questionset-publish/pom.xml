@@ -113,15 +113,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <relocations>
-                                <relocation>
-                                    <pattern>com.google.common</pattern>
-                                    <shadedPattern>com.qs.shaded.google.common</shadedPattern>
-                                    <includes>
-                                        <include>com.google.common.*</include>
-                                    </includes>
-                                </relocation>
-                            </relocations>
                             <artifactSet>
                                 <excludes>
                                     <exclude>com.google.code.findbugs:jsr305</exclude>
