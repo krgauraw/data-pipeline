@@ -86,9 +86,10 @@ object CSPMetaUtil {
 		val result = objList.map(data => {
 			if (null != data && data.nonEmpty) {
 				val updatedData: Map[String, AnyRef] = data.map(x => {
-					if (cspMeta.contains(x._1))
+					if (cspMeta.contains(x._1)) {
+						logger.info("key :: "+x._1)
 						(x._1, getBasePath(x._2.asInstanceOf[String]))
-					else (x._1, x._2)
+					} else (x._1, x._2)
 				}).toMap
 				updatedData
 			} else data
@@ -102,11 +103,13 @@ object CSPMetaUtil {
 		val validCSPSource: util.List[String] = config.config.getStringList("cloudstorage.write_base_path")
 		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		logger.info("getBasePath :::: "+basePath)
+		logger.info("value:: "+value)
 		val result: List[String] = basePath.map(path => {
 			if (value.asInstanceOf[String].contains(path))
 				value.asInstanceOf[String].replace(path, newCloudPath)
 			else value
 		})
+		logger.info("result ::: "+result)
 		result(0)
 	}
 
