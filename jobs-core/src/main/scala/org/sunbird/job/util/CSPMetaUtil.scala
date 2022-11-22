@@ -53,8 +53,10 @@ object CSPMetaUtil {
 
 	def updateRelativePath(query: String)(implicit config: BaseJobConfig): String = {
 		logger.info("CSPMetaUtil ::: updateRelativePath ::: query before url replace :: " + query)
-		val validCSPSource : Array[String] = config.config.getStringList("cloudstorage.write_base_path").toArray().asInstanceOf[Array[String]]
-		val result = StringUtils.replaceEach(query, validCSPSource, Array("CLOUD_STORAGE_BASE_PATH"))
+		//val validCSPSource : Array[String] = config.config.getStringList("cloudstorage.write_base_path").toArray().asInstanceOf[Array[String]]
+		val validCSPSource: List[String] = config.config.getStringList("cloudstorage.write_base_path").asScala.toList
+		val paths:Array[String] = validCSPSource.map(s => s+ java.io.File.separator + config.getString("cloud_storage_container", "")).toArray
+		val result = StringUtils.replaceEach(query, paths, Array("CLOUD_STORAGE_BASE_PATH"))
 		logger.info("CSPMetaUtil ::: updateRelativePath ::: query after url replace :: " + result)
 		result
 		/*validCSPSource.forEach(basePath => {
