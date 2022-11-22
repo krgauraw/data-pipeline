@@ -200,7 +200,10 @@ trait ObjectBundle {
 				val fullDownloadFiles: util.List[String] = if (config.getConfig().hasPath("content.downloadFiles.full")) config.getConfig().getStringList("content.downloadFiles.full") else util.Arrays.asList[String]("appIcon", "grayScaleAppIcon", "artifactUrl", "itemSetPreviewUrl", "media")
 				fullDownloadFiles.asScala.toList
 		}
+    logger.info("urlFields ::: "+urlFields)
+    logger.info("isOnlineObj ::: "+isOnlineObj)
     data.filter(en => urlFields.contains(en._1) && null != en._2).flatMap(entry => {
+      logger.info("entry ::: "+entry)
       isOnlineObj match {
         case true => {
           if (!StringUtils.equalsIgnoreCase("artifactUrl", entry._1) && validUrl(entry._2.asInstanceOf[String])) {

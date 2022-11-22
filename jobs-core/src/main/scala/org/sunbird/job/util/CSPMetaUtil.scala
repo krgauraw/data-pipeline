@@ -88,7 +88,7 @@ object CSPMetaUtil {
 		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		val result = objList.map(data => {
 			if (null != data && data.nonEmpty) {
-				val updatedData: Map[String, AnyRef] = data.map(x => if (cspMeta.contains(x._1)) (x._1, basePath.map(path => if (x._2.asInstanceOf[String].contains(path)) x._2.asInstanceOf[String].replace(path, newCloudPath) else x._2)) else (x._1, x._2))
+				val updatedData: Map[String, AnyRef] = data.map(x => if (cspMeta.contains(x._1)) (x._1, basePath.map(path => if (x._2.asInstanceOf[String].contains(path)) x._2.asInstanceOf[String].replace(path, newCloudPath) else x._2)) else (x._1, x._2)).toMap
 				updatedData
 			} else data
 		})
