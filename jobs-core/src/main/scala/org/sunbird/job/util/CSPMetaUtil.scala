@@ -83,17 +83,31 @@ object CSPMetaUtil {
 	def updateCloudPath(objList: List[Map[String, AnyRef]])(implicit config: BaseJobConfig): List[Map[String, AnyRef]] = {
 		logger.info("CSPMetaUtil ::: updateCloudPath List[Map[String, AnyRef]] ::: data before url replace :: " + objList)
 		val cspMeta: util.List[String] = config.config.getStringList("cloudstorage.metadata.list")
-		val newCloudPath: String = config.getString("cloudstorage.read_base_path", "") + java.io.File.separator + config.getString("cloud_storage_container", "")
-		val validCSPSource: util.List[String] = config.config.getStringList("cloudstorage.write_base_path")
-		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		val result = objList.map(data => {
 			if (null != data && data.nonEmpty) {
-				val updatedData: Map[String, AnyRef] = data.map(x => if (cspMeta.contains(x._1)) (x._1, basePath.map(path => if (x._2.asInstanceOf[String].contains(path)) x._2.asInstanceOf[String].replace(path, newCloudPath) else x._2)) else (x._1, x._2)).toMap
+				val updatedData: Map[String, AnyRef] = data.map(x => {
+					if (cspMeta.contains(x._1))
+						(x._1, getBasePath(x._2.asInstanceOf[String]))
+					else (x._1, x._2)
+				}).toMap
 				updatedData
 			} else data
 		})
 		logger.info("CSPMetaUtil ::: updateCloudPath List[Map[String, AnyRef]] ::: data after url replace :: " + result)
 		result
+	}
+
+	def getBasePath(value: String)(implicit config: BaseJobConfig): String = {
+		val newCloudPath: String = config.getString("cloudstorage.read_base_path", "") + java.io.File.separator + config.getString("cloud_storage_container", "")
+		val validCSPSource: util.List[String] = config.config.getStringList("cloudstorage.write_base_path")
+		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
+		logger.info("getBasePath :::: "+basePath)
+		val result: List[String] = basePath.map(path => {
+			if (value.asInstanceOf[String].contains(path))
+				value.asInstanceOf[String].replace(path, newCloudPath)
+			else value
+		})
+		result(0)
 	}
 
 }
