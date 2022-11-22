@@ -88,7 +88,7 @@ object CSPMetaUtil {
 				val updatedData: Map[String, AnyRef] = data.map(x => {
 					if (cspMeta.contains(x._1)) {
 						logger.info("key :: "+x._1)
-						(x._1, getBasePath(x._2.asInstanceOf[String]))
+						(x._1, getBasePath(x._2))
 					} else (x._1, x._2)
 				}).toMap
 				updatedData
@@ -98,21 +98,55 @@ object CSPMetaUtil {
 		result
 	}
 
-	def getBasePath(value: String)(implicit config: BaseJobConfig): String = {
+	def getBasePath(value: AnyRef)(implicit config: BaseJobConfig): AnyRef = {
 		val newCloudPath: String = config.getString("cloudstorage.read_base_path", "") + java.io.File.separator + config.getString("cloud_storage_container", "")
 		val validCSPSource: util.List[String] = config.config.getStringList("cloudstorage.write_base_path")
 		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		logger.info("getBasePath :::: "+basePath)
 		logger.info("value:: "+value)
-		if(StringUtils.isNotBlank(value)) {
-			logger.info("value is string "+value.isInstanceOf[String])
-			val result: List[String] = basePath.map(path => {
-				if (value.asInstanceOf[String].contains(path))
-					value.asInstanceOf[String].replace(path, newCloudPath)
-				else value
-			})
-			logger.info("result ::: "+result)
-			result(0)
+		if(null!=value) {
+			value match {
+				case x: String => {
+					if(StringUtils.isNotBlank(x)) {
+						logger.info("value is string "+value.isInstanceOf[String])
+						val result: List[String] = basePath.map(path => {
+							if (x.asInstanceOf[String].contains(path))
+								x.asInstanceOf[String].replace(path, newCloudPath)
+							else x
+						})
+						logger.info("result ::: "+result)
+						result(0).asInstanceOf[AnyRef]
+					} else x.asInstanceOf[AnyRef]
+				}
+				case y: Map[String, AnyRef] => {
+					logger.info("scala map block")
+					val dStr = ScalaJsonUtil.serialize(y)
+					val result: List[String] = basePath.map(path => {
+						if (dStr.asInstanceOf[String].contains(path))
+							dStr.asInstanceOf[String].replaceAll(path, newCloudPath)
+						else dStr
+					})
+					logger.info("result of scala map block ::: "+result)
+					val tt = result(0)
+					val output: Map[String, AnyRef] = ScalaJsonUtil.deserialize[Map[String, AnyRef]](tt)
+					logger.info("result of scala map block ::: output map ::: "+output)
+					output.asInstanceOf[Map[String, AnyRef]]
+				}
+				case z: util.Map[String, AnyRef] => {
+					logger.info("java map block")
+					val dStr = ScalaJsonUtil.serialize(z)
+					val result: List[String] = basePath.map(path => {
+						if (dStr.asInstanceOf[String].contains(path))
+							dStr.asInstanceOf[String].replaceAll(path, newCloudPath)
+						else dStr
+					})
+					logger.info("result of java map block ::: "+result)
+					val tt = result(0)
+					val output:util.Map[String, AnyRef] = ScalaJsonUtil.deserialize[util.Map[String, AnyRef]](tt)
+					logger.info("result of java map block ::: output map ::: "+output)
+					output.asInstanceOf[util.Map[String, AnyRef]]
+				}
+			}
 		} else value
 	}
 
