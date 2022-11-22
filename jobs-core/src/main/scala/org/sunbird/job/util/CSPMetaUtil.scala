@@ -104,13 +104,16 @@ object CSPMetaUtil {
 		val basePath: List[String] = validCSPSource.asScala.toList.map(source => source + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		logger.info("getBasePath :::: "+basePath)
 		logger.info("value:: "+value)
-		val result: List[String] = basePath.map(path => {
-			if (value.asInstanceOf[String].contains(path))
-				value.asInstanceOf[String].replace(path, newCloudPath)
-			else value
-		})
-		logger.info("result ::: "+result)
-		result(0)
+		if(StringUtils.isNotBlank(value)) {
+			logger.info("value is string "+value.isInstanceOf[String])
+			val result: List[String] = basePath.map(path => {
+				if (value.asInstanceOf[String].contains(path))
+					value.asInstanceOf[String].replace(path, newCloudPath)
+				else value
+			})
+			logger.info("result ::: "+result)
+			result(0)
+		} else value
 	}
 
 }
