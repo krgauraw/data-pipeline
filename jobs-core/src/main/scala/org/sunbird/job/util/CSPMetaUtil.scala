@@ -53,17 +53,23 @@ object CSPMetaUtil {
 
 	def updateRelativePath(query: String)(implicit config: BaseJobConfig): String = {
 		logger.info("CSPMetaUtil ::: updateRelativePath ::: query before url replace :: " + query)
-		val validCSPSource: util.List[String] = config.config.getStringList("cloudstorage.write_base_path")
-		validCSPSource.forEach(basePath => {
+		val validCSPSource : Array[String] = config.config.getStringList("cloudstorage.write_base_path").toArray().asInstanceOf[Array[String]]
+		val result = StringUtils.replaceEach(query, validCSPSource, Array("CLOUD_STORAGE_BASE_PATH"))
+		logger.info("CSPMetaUtil ::: updateRelativePath ::: query after url replace :: " + result)
+		result
+		/*validCSPSource.forEach(basePath => {
 			val path = basePath + java.io.File.separator + config.getString("cloud_storage_container", "")
 			logger.info("CSPMetaUtil ::: updateRelativePath ::: replacing urls :::: path :: "+path)
 			if (query.contains(path)) {
 				logger.info("CSPMetaUtil ::: updateRelativePath ::: replacing urls")
-				query.replaceAll(path, "CLOUD_STORAGE_BASE_PATH")
+				StringUtils.replaceEachRepeatedly()
+				val tt = query.replaceAllLiterally(path, "CLOUD_STORAGE_BASE_PATH")
+				logger.info("tt another val :::: "+tt)
+				query.replaceAllLiterally(path, "CLOUD_STORAGE_BASE_PATH")
 			}
-		})
-		logger.info("CSPMetaUtil ::: updateRelativePath ::: query after url replace :: " + query)
-		query
+		})*/
+		/*logger.info("CSPMetaUtil ::: updateRelativePath ::: query after url replace :: " + query)
+		query*/
 	}
 
 	def updateRelativePath(data: util.Map[String, AnyRef])(implicit config: BaseJobConfig): util.Map[String, AnyRef] = {
