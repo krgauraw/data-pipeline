@@ -218,7 +218,7 @@ trait ObjectBundle {
               case e: Exception => {
                 logger.info("exception message ::: "+e.getLocalizedMessage)
                 e.printStackTrace()
-                Map()
+                Map[AnyRef, String]()
               }
             }
 
