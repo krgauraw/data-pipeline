@@ -212,7 +212,16 @@ trait ObjectBundle {
             logger.info("MEDIA::  " + entry._2.asInstanceOf[String])
             val media: List[Map[String, AnyRef]] = if (null != entry._2) ScalaJsonUtil.deserialize[List[Map[String, AnyRef]]](entry._2.asInstanceOf[String]) else List()
             logger.info("MEDIA::::  " + media)
-            getMediaUrl(media, identifier, pkgType)
+            try{
+              getMediaUrl(media, identifier, pkgType)
+            } catch {
+              case e: Exception => {
+                logger.info("exception message ::: "+e.getLocalizedMessage)
+                e.printStackTrace()
+                Map()
+              }
+            }
+
           } else {
             entry._2 match {
               case _: File =>
