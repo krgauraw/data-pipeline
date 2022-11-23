@@ -66,7 +66,7 @@ object CSPMetaUtil {
 	def updateRelativePath(query: String)(implicit config: BaseJobConfig): String = {
 		logger.info("CSPMetaUtil ::: updateRelativePath ::: query before url replace :: " + query)
 		val validCSPSource: List[String] = config.config.getStringList("cloudstorage.write_base_path").asScala.toList
-		val paths:Array[String] = validCSPSource.map(s => s+ java.io.File.separator + config.getString("cloud_storage_container", "")).toArray
+		val paths: Array[String] = validCSPSource.map(s => s + java.io.File.separator + config.getString("cloud_storage_container", "")).toArray
 		val result = StringUtils.replaceEach(query, paths, Array("CLOUD_STORAGE_BASE_PATH"))
 		logger.info("CSPMetaUtil ::: updateRelativePath ::: query after url replace :: " + result)
 		result
@@ -76,7 +76,7 @@ object CSPMetaUtil {
 		logger.info("CSPMetaUtil ::: updateCloudPath List[Map[String, AnyRef]] ::: data before url replace :: " + objList)
 		val cspMeta: util.List[String] = config.config.getStringList("cloudstorage.metadata.list")
 		val validCSPSource: List[String] = config.config.getStringList("cloudstorage.write_base_path").asScala.toList
-		val paths:Array[String] = validCSPSource.map(s => s+ java.io.File.separator + config.getString("cloud_storage_container", "")).toArray
+		val paths: Array[String] = validCSPSource.map(s => s + java.io.File.separator + config.getString("cloud_storage_container", "")).toArray
 		val newCloudPath: Array[String] = Array[String](config.getString("cloudstorage.read_base_path", "") + java.io.File.separator + config.getString("cloud_storage_container", ""))
 		val result = objList.map(data => {
 			if (null != data && data.nonEmpty) {
@@ -89,29 +89,19 @@ object CSPMetaUtil {
 
 	def getBasePath(key: String, value: AnyRef, oldPath: Array[String], newPath: Array[String])(implicit config: BaseJobConfig): AnyRef = {
 		logger.info(s"CSPMetaUtil ::: getBasePath ::: Updating Path for Key : ${key} & Value : ${value}")
-
-		logger.info("getBasePath :::: paths :: "+oldPath)
-		logger.info("value:: "+value)
-		logger.info("newCloudPath :: "+newPath)
-		val res = if(null!=value) {
+		val res = if (null != value) {
 			value match {
-				case x: String => if(StringUtils.isNotBlank(x)) StringUtils.replaceEach(x, oldPath, newPath) else x
+				case x: String => if (StringUtils.isNotBlank(x)) StringUtils.replaceEach(x, oldPath, newPath) else x
 				case y: Map[String, AnyRef] => {
-					logger.info("scala map block")
 					val dStr = ScalaJsonUtil.serialize(y)
 					val result = StringUtils.replaceEach(dStr, oldPath, newPath)
-					logger.info("result of scala map block ::: "+result)
 					val output: Map[String, AnyRef] = ScalaJsonUtil.deserialize[Map[String, AnyRef]](result)
-					logger.info("result of scala map block ::: output map ::: "+output)
 					output
 				}
 				case z: util.Map[String, AnyRef] => {
-					logger.info("java map block")
 					val dStr = ScalaJsonUtil.serialize(z)
 					val result = StringUtils.replaceEach(dStr, oldPath, newPath)
-					logger.info("result of java map block ::: "+result)
-					val output:util.Map[String, AnyRef] = ScalaJsonUtil.deserialize[util.Map[String, AnyRef]](result)
-					logger.info("result of java map block ::: output map ::: "+output)
+					val output: util.Map[String, AnyRef] = ScalaJsonUtil.deserialize[util.Map[String, AnyRef]](result)
 					output
 				}
 			}
