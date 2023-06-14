@@ -6,7 +6,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
-import org.sunbird.job.domain.`object`.DefinitionCache
+import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.publish.core.{DefinitionConfig, ExtDataConfig, ObjectData}
 import org.sunbird.job.publish.helpers.EcarPackageType
 import org.sunbird.job.questionset.publish.domain.PublishMetadata
@@ -14,8 +14,8 @@ import org.sunbird.job.questionset.publish.helpers.QuestionPublisher
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
 import org.sunbird.job.util.{CassandraUtil, CloudStorageUtil, HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
-import java.lang.reflect.Type
 
+import java.lang.reflect.Type
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 
@@ -32,7 +32,6 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QuestionPublishFunction])
   val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
-  private val readerConfig = ExtDataConfig(config.questionKeyspaceName, config.questionTableName)
 
   @transient var ec: ExecutionContext = _
   @transient var cache: DataCache = _
@@ -63,6 +62,8 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
     logger.info("Question publishing started for : " + data.identifier)
     metrics.incCounter(config.questionPublishEventCount)
+    val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
+    val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
     val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
     val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
       val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)

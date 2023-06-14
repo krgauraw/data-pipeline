@@ -32,6 +32,8 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
     pkgVersion.toDouble
   }
 
+	def schemaVersion: String = readOrDefault[String]("edata.metadata.schemaVersion", "1.0")
+
 	def validEvent(): Boolean = {
 		(StringUtils.equals("publish", action) && StringUtils.isNotBlank(objectId)) && (objectTypes.contains(objectType) && mimeTypes.contains(mimeType))
 	}

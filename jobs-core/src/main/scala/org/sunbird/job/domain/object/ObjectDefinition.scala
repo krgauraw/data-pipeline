@@ -69,4 +69,10 @@ class ObjectDefinition(val objectType: String, val version: String, val schema: 
     val properties = schema.getOrElse("properties", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
     properties.keySet.toList
   }
+
+  def getOneOfProps(): List[String] = {
+    val oneOfProps: List[String] = if (config.contains("oneOfProps")) config.get("oneOfProps").asInstanceOf[List[String]] else List()
+    println("oneOfProps :::: " + oneOfProps)
+    oneOfProps
+  }
 }
