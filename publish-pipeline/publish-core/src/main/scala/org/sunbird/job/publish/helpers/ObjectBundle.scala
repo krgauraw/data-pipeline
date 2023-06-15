@@ -84,8 +84,12 @@ trait ObjectBundle {
       val scVer: String = data.getOrElse("schemaVersion", "0.0").asInstanceOf[String]
       val schemaVersion: String = if(!StringUtils.equalsIgnoreCase("0.0", scVer)) scVer else defConfig.supportedVersion.getOrElse(objectType.toLowerCase, "1.0").asInstanceOf[String]
       val definition: ObjectDefinition = defCache.getDefinition(objectType, schemaVersion, defConfig.basePath)
+      logger.info("scVer ::: "+scVer)
+      logger.info("schemaVersion ::: "+schemaVersion)
+      logger.info("oneOfProps ::: "+definition.getOneOfProps())
       val enMeta = mergedMeta.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))
       val updatedMeta = if(definition.getOneOfProps().nonEmpty) enMeta.map(entry => (entry._1, convertOneOfProps(entry, definition.getOneOfProps()))) else enMeta
+      logger.info("updated metadata ::: "+updatedMeta)
       (updatedMeta, downloadUrls)
     }).unzip
   }
