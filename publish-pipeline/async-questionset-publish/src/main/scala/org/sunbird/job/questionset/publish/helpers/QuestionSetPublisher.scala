@@ -77,7 +77,7 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 
 	override def getExtDatas(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil,config: PublishConfig): Option[Map[String, AnyRef]] = {
 		val rows = getQuestionsExtData(identifiers, readerConfig)(cassandraUtil).asScala
-		val extProps = readerConfig.propsMapping.keySet
+		val extProps = readerConfig.propsMapping.keySet ++ Set("identifier")
 		if (rows.nonEmpty)
 			Option(rows.map(row => row.getString("identifier") -> extProps.map(prop => (prop -> row.getString(prop.toLowerCase()))).toMap).toMap)
 		else
@@ -91,7 +91,7 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 	def getQuestionsExtData(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
 		logger.info("QuestionSetPublisher ::: getQuestionsExtData ::: reader config ::: keyspace: " + readerConfig.keyspace + " ,  table : " + readerConfig.table)
 		val select = QueryBuilder.select()
-		val extProps: Set[String] = readerConfig.propsMapping.keySet
+		val extProps: Set[String] = readerConfig.propsMapping.keySet ++ Set("identifier")
 		if (null != extProps && !extProps.isEmpty) {
 			extProps.foreach(prop => {
 				if ("blob".equalsIgnoreCase(readerConfig.propsMapping.getOrElse(prop, "").asInstanceOf[String]))

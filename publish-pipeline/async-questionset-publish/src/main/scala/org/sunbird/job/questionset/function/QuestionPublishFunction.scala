@@ -65,6 +65,7 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
     metrics.incCounter(config.questionPublishEventCount)
     val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
     val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
+    logger.info("readerConfig ::: "+readerConfig)
     val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
     val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
       val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)
