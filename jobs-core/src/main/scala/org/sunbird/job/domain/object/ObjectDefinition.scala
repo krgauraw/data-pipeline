@@ -71,7 +71,7 @@ class ObjectDefinition(val objectType: String, val version: String, val schema: 
   }
 
   def getOneOfProps(): List[String] = {
-    val oneOfProps: List[String] = if (config.contains("oneOfProps")) config.get("oneOfProps").asInstanceOf[List[String]] else List()
+    val oneOfProps: List[String] = if (config.contains("oneOfProps")) config.getOrElse("oneOfProps", List()).asInstanceOf[List[String]] else List()
     println("oneOfProps :::: " + oneOfProps)
     oneOfProps
   }

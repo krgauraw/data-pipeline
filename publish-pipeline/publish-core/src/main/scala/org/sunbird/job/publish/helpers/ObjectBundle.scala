@@ -86,7 +86,10 @@ trait ObjectBundle {
       val definition: ObjectDefinition = defCache.getDefinition(objectType, schemaVersion, defConfig.basePath)
       logger.info("scVer ::: "+scVer)
       logger.info("schemaVersion ::: "+schemaVersion)
+      logger.info("before def...")
+      logger.info("defintion ::: "+definition)
       logger.info("oneOfProps ::: "+definition.getOneOfProps())
+      logger.info("after def...")
       val enMeta = mergedMeta.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))
       val updatedMeta = if(definition.getOneOfProps().nonEmpty) enMeta.map(entry => (entry._1, convertOneOfProps(entry, definition.getOneOfProps()))) else enMeta
       logger.info("updated metadata ::: "+updatedMeta)
