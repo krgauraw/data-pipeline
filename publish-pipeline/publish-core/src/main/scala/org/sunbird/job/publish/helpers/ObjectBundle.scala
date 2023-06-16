@@ -328,12 +328,23 @@ trait ObjectBundle {
   }
 
   def convertOneOfProps(entry: (String, AnyRef), oneOfProps: List[String]): AnyRef = {
-    if (oneOfProps.contains(entry._1)) {
+    logger.info("convertOneOfProps ::: entry :: "+entry)
+    if (oneOfProps.nonEmpty && oneOfProps.contains(entry._1)) {
       try {
-        JSONUtil.deserialize[Object](entry._2.asInstanceOf[String])
+        println("entry 2 ::: "+entry._2)
+        val data = JSONUtil.deserialize[Object](entry._2.asInstanceOf[String])
+        println("deserialized data :::: "+data)
+        data
       }
       catch {
-        case e: Exception => entry._2
+        case e: Exception => {
+          println("exception message ::: "+e.getMessage)
+          entry._2
+        }
+        case _ => {
+          println("exception default block ")
+          entry._2
+        }
       }
     }
     else entry._2
