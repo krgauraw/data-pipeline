@@ -84,12 +84,7 @@ trait ObjectBundle {
       val scVer: String = data.getOrElse("schemaVersion", "0.0").asInstanceOf[String]
       val schemaVersion: String = if(!StringUtils.equalsIgnoreCase("0.0", scVer)) scVer else defConfig.supportedVersion.getOrElse(objectType.toLowerCase, "1.0").asInstanceOf[String]
       val definition: ObjectDefinition = defCache.getDefinition(objectType, schemaVersion, defConfig.basePath)
-      logger.info("scVer ::: "+scVer)
       logger.info("schemaVersion ::: "+schemaVersion)
-      logger.info("before def...")
-      logger.info("defintion ::: "+definition)
-      logger.info("oneOfProps ::: "+definition.getOneOfProps())
-      logger.info("after def...")
       val enMeta = mergedMeta.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))
       val updatedMeta = if(definition.getOneOfProps().nonEmpty) enMeta.map(entry => (entry._1, convertOneOfProps(entry, definition.getOneOfProps()))) else enMeta
       logger.info("updated metadata ::: "+updatedMeta)
@@ -331,23 +326,13 @@ trait ObjectBundle {
   }
 
   def convertOneOfProps(entry: (String, AnyRef), oneOfProps: List[String]): AnyRef = {
-    logger.info("convertOneOfProps ::: entry :: "+entry)
     if (oneOfProps.nonEmpty && oneOfProps.contains(entry._1)) {
       try {
-        println("entry 2 ::: "+entry._2)
         val data = JSONUtil.deserialize[Object](entry._2.asInstanceOf[String])
-        println("deserialized data :::: "+data)
         data
       }
       catch {
-        case e: Exception => {
-          println("exception message ::: "+e.getMessage)
-          entry._2
-        }
-        case _ => {
-          println("exception default block ")
-          entry._2
-        }
+        case e: Exception => entry._2
       }
     }
     else entry._2
