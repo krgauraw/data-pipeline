@@ -2,7 +2,6 @@ package org.sunbird.job.questionset.publish.helpers
 
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, Insert, QueryBuilder, Select}
-import org.apache.commons.lang3
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.publish.config.PublishConfig
@@ -17,7 +16,6 @@ import scala.collection.mutable.ListBuffer
 trait QuestionSetPublisher extends ObjectReader with ObjectValidator with ObjectUpdater with ObjectEnrichment with EcarGenerator with QuestionPdfGenerator {
 
 	private[this] val logger = LoggerFactory.getLogger(classOf[QuestionSetPublisher])
-	val extProps = List("body", "editorState", "answer", "solutions", "instructions", "hints", "media", "responseDeclaration", "interactions", "identifier")
 
 	override def getExtData(identifier: String, pkgVersion: Double, mimeType: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil, config: PublishConfig): Option[ObjectExtData] = {
 		val row: Row = Option(getQuestionSetData(getEditableObjId(identifier, pkgVersion), readerConfig)).getOrElse(getQuestionSetData(identifier, readerConfig))
@@ -79,6 +77,7 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 
 	override def getExtDatas(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil,config: PublishConfig): Option[Map[String, AnyRef]] = {
 		val rows = getQuestionsExtData(identifiers, readerConfig)(cassandraUtil).asScala
+		val extProps = readerConfig.propsMapping.keySet ++ Set("identifier")
 		if (rows.nonEmpty)
 			Option(rows.map(row => row.getString("identifier") -> extProps.map(prop => (prop -> row.getString(prop.toLowerCase()))).toMap).toMap)
 		else
@@ -92,7 +91,15 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 	def getQuestionsExtData(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
 		logger.info("QuestionSetPublisher ::: getQuestionsExtData ::: reader config ::: keyspace: " + readerConfig.keyspace + " ,  table : " + readerConfig.table)
 		val select = QueryBuilder.select()
-		extProps.foreach(prop => if (lang3.StringUtils.equals("body", prop) | lang3.StringUtils.equals("answer", prop)) select.fcall("blobAsText", QueryBuilder.column(prop.toLowerCase())).as(prop.toLowerCase()) else select.column(prop.toLowerCase()).as(prop.toLowerCase()))
+		val extProps: Set[String] = readerConfig.propsMapping.keySet ++ Set("identifier")
+		if (null != extProps && !extProps.isEmpty) {
+			extProps.foreach(prop => {
+				if ("blob".equalsIgnoreCase(readerConfig.propsMapping.getOrElse(prop, "").asInstanceOf[String]))
+					select.fcall("blobAsText", QueryBuilder.column(prop)).as(prop)
+				else
+					select.column(prop).as(prop)
+			})
+		}
 		val selectWhere: Select.Where = select.from(readerConfig.keyspace, readerConfig.table).where()
 		selectWhere.and(QueryBuilder.in("identifier", identifiers.asJava))
 		logger.info("QuestionSetPublisher ::: getQuestionsExtData ::: cassandra query ::: " + selectWhere.toString)
@@ -162,7 +169,7 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 
 	override def enrichObjectMetadata(obj: ObjectData)(implicit neo4JUtil: Neo4JUtil, cassandraUtil: CassandraUtil, readerConfig: ExtDataConfig, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, definitionCache: DefinitionCache, definitionConfig: DefinitionConfig): Option[ObjectData] = {
 		val newMetadata: Map[String, AnyRef] = obj.metadata ++ Map("pkgVersion" -> (obj.pkgVersion + 1).asInstanceOf[AnyRef], "lastPublishedOn" -> getTimeStamp,
-			"publishError" -> null, "variants" -> null, "downloadUrl" -> null, "compatibilityLevel" -> 5.asInstanceOf[AnyRef], "status" -> "Live")
+			"publishError" -> null, "variants" -> null, "downloadUrl" -> null, "status" -> "Live")
 		val children: List[Map[String, AnyRef]] = obj.hierarchy.getOrElse(Map()).getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
 		Some(new ObjectData(obj.identifier, newMetadata, obj.extData, hierarchy = Some(Map("identifier" -> obj.identifier, "children" -> enrichChildren(children)))))
 	}

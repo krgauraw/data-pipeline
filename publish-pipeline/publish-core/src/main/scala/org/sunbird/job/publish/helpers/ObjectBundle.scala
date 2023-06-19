@@ -28,7 +28,7 @@ trait ObjectBundle {
   private val manifestFileName = "manifest.json"
   private val hierarchyFileName = "hierarchy.json"
   private val hierarchyVersion = "1.0"
-  val excludeBundleMeta = List("screenshots", "posterImage", "index", "depth")
+  val excludeBundleMeta = List("screenshots", "posterImage", "index", "depth", "editorState")
 
   def getBundleFileName(identifier: String, metadata: Map[String, AnyRef], pkgType: String)(implicit config: PublishConfig): String = {
     val maxAllowedContentName = config.getInt("max_allowed_content_name", 120)
@@ -81,10 +81,14 @@ trait ObjectBundle {
           updatedObj + ("visibility" -> "Parent") ++ dMap
         } else updatedObj ++ dMap
       // TODO: Addressing visibility "Parent" issue for collection children as expected by Mobile - ContentBundle.java line120 - end
-
-      val definition: ObjectDefinition = defCache.getDefinition(objectType, defConfig.supportedVersion.getOrElse(objectType.toLowerCase, "1.0").asInstanceOf[String], defConfig.basePath)
+      val scVer: String = data.getOrElse("schemaVersion", "0.0").asInstanceOf[String]
+      val schemaVersion: String = if(!StringUtils.equalsIgnoreCase("0.0", scVer)) scVer else defConfig.supportedVersion.getOrElse(objectType.toLowerCase, "1.0").asInstanceOf[String]
+      val definition: ObjectDefinition = defCache.getDefinition(objectType, schemaVersion, defConfig.basePath)
+      logger.info("schemaVersion ::: "+schemaVersion)
       val enMeta = mergedMeta.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))
-      (enMeta, downloadUrls)
+      val updatedMeta = if(definition.getOneOfProps().nonEmpty) enMeta.map(entry => (entry._1, convertOneOfProps(entry, definition.getOneOfProps()))) else enMeta
+      logger.info("updated metadata ::: "+updatedMeta)
+      (updatedMeta, downloadUrls)
     }).unzip
   }
 
@@ -313,6 +317,19 @@ trait ObjectBundle {
     if (jsonProps.contains(entry._1)) {
       try {
         JSONUtil.deserialize[Object](entry._2.asInstanceOf[String])
+      }
+      catch {
+        case e: Exception => entry._2
+      }
+    }
+    else entry._2
+  }
+
+  def convertOneOfProps(entry: (String, AnyRef), oneOfProps: List[String]): AnyRef = {
+    if (oneOfProps.nonEmpty && oneOfProps.contains(entry._1)) {
+      try {
+        val data = JSONUtil.deserialize[Object](entry._2.asInstanceOf[String])
+        data
       }
       catch {
         case e: Exception => entry._2

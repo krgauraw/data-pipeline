@@ -73,8 +73,9 @@ trait ObjectUpdater {
   }
 
   def metaDataQuery(obj: ObjectData)(definitionCache: DefinitionCache, config: DefinitionConfig): String = {
-    val version = config.supportedVersion.getOrElse(obj.dbObjType.toLowerCase(), "1.0").asInstanceOf[String]
-    val definition = definitionCache.getDefinition(obj.dbObjType, version, config.basePath)
+    val scVer = obj.metadata.getOrElse("schemaVersion", "0.0").asInstanceOf[String]
+    val schemaVersion: String = if(!StringUtils.equalsIgnoreCase("0.0", scVer)) scVer else config.supportedVersion.getOrElse(obj.dbObjType.toLowerCase(), "1.0").asInstanceOf[String]
+    val definition = definitionCache.getDefinition(obj.dbObjType, schemaVersion, config.basePath)
     val metadata = obj.metadata - ("IL_UNIQUE_ID", "identifier", "IL_FUNC_OBJECT_TYPE", "IL_SYS_NODE_TYPE", "pkgVersion", "lastStatusChangedOn", "lastUpdatedOn", "status", "objectType", "publish_type")
     metadata.map(prop => {
       if (null == prop._2) s"n.${prop._1}=${prop._2}"
