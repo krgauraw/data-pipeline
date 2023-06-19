@@ -25,7 +25,7 @@ class QuestionPublishUtilSpec extends FlatSpec with BeforeAndAfterAll with Match
   implicit var cassandraUtil: CassandraUtil = _
   val config: Config = ConfigFactory.load("test.conf").withFallback(ConfigFactory.systemEnvironment())
   val jobConfig: QuestionSetPublishConfig = new QuestionSetPublishConfig(config)
-  implicit val readerConfig: ExtDataConfig = ExtDataConfig(jobConfig.questionKeyspaceName, jobConfig.questionTableName)
+  implicit val readerConfig: ExtDataConfig = ExtDataConfig(jobConfig.questionKeyspaceName, jobConfig.questionTableName, List("identifier"), Map("body" -> "blob", "answer" -> "blob", "editorState" -> "string", "solutions" -> "string", "instructions" -> "string", "hints" -> "string", "media" -> "string", "responseDeclaration" -> "string", "interactions" -> "string"))
   implicit val cloudStorageUtil = new CloudStorageUtil(jobConfig)
   implicit val defCache = new DefinitionCache()
   implicit val defConfig = DefinitionConfig(jobConfig.schemaSupportVersionMap, jobConfig.definitionBasePath)
