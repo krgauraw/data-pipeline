@@ -44,9 +44,13 @@ trait QuestionPublisher extends ObjectReader with ObjectValidator with ObjectEnr
     } else {
       if (obj.extData.getOrElse(Map()).getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
     }
-    if (interactionTypes.nonEmpty && StringUtils.equalsIgnoreCase("1.1", obj.metadata.getOrElse("schemaVersion", "1.0").asInstanceOf[String])) {
+    if(!StringUtils.equalsIgnoreCase("1.1", obj.metadata.getOrElse("schemaVersion", "1.0").asInstanceOf[String])
+      && obj.extData.getOrElse(Map()).getOrElse("editorState", "").asInstanceOf[String].isEmpty)
+      messages += s"""There is no editorState available for : $identifier"""
+
+    /*if (interactionTypes.nonEmpty && StringUtils.equalsIgnoreCase("1.1", obj.metadata.getOrElse("schemaVersion", "1.0").asInstanceOf[String])) {
       if (obj.extData.getOrElse(Map()).getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
-    } else if (obj.extData.getOrElse(Map()).getOrElse("editorState", "").asInstanceOf[String].isEmpty) messages += s"""There is no editorState available for : $identifier"""
+    } else if (obj.extData.getOrElse(Map()).getOrElse("editorState", "").asInstanceOf[String].isEmpty) messages += s"""There is no editorState available for : $identifier"""*/
     messages.toList
   }
 
