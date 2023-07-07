@@ -11,12 +11,15 @@ object QuestionHandlerFactory {
 
     private class MCQHandler extends QuestionTypeHandler {
         override def getQuestion(extData: Option[Map[String, AnyRef]]): String = {
+            println("MCQHandler ::: getQuestion ::: ")
             extData.getOrElse(Map()).getOrElse("body", "").asInstanceOf[String]
         }
 
         override def getAnswers(extData: Option[Map[String, AnyRef]]): List[String] = {
+            println("MCQHandler ::: getAnswers ::: start")
             val responseDeclaration = gson.fromJson(extData.getOrElse(Map()).getOrElse("responseDeclaration", "").asInstanceOf[String],
                 classOf[java.util.Map[String, AnyRef]]).asScala
+            println("MCQHandler ::: getAnswers ::: responseDeclaration ::: "+responseDeclaration)
             val valueOption: Option[Any] = if(null != responseDeclaration) responseDeclaration.getOrElse("response1", new util.HashMap()).asInstanceOf[java.util.Map[String, AnyRef]].asScala
                 .getOrElse("correctResponse", new util.HashMap()).asInstanceOf[java.util.Map[String, AnyRef]].asScala
                 .get("value") else Some(AnyRef)
@@ -25,6 +28,7 @@ object QuestionHandlerFactory {
                 case Some(element: util.ArrayList[Double]) => element.asScala.toList
                 case _ => List()
             }
+            println("MCQHandler ::: getAnswers ::: answersValues ::: "+answersValues)
             val interactions = gson.fromJson(extData.getOrElse(Map()).getOrElse("interactions", "").asInstanceOf[String],
                 classOf[java.util.Map[String, AnyRef]]).asScala
 
@@ -33,17 +37,20 @@ object QuestionHandlerFactory {
                 .filter(element => answersValues.contains(element.asScala.getOrElse("value", -1).asInstanceOf[Double]))
                 .toList
                 .map(element => element.asScala.getOrElse("label", "").asInstanceOf[String]) else List()
+            println("MCQHandler ::: getAnswers ::: answers ::: "+answers)
             answers
         }
     }
 
     private class SubjectiveHandler extends QuestionTypeHandler {
         override def getQuestion(extData: Option[Map[String, AnyRef]]): String = {
+            println("SubjectiveHandler ::: getQuestion ::: start")
             extData.getOrElse(Map()).getOrElse("body", "").asInstanceOf[String]
 
         }
 
         override def getAnswers(extData: Option[Map[String, AnyRef]]): List[String] = {
+            println("SubjectiveHandler ::: getAnswers ::: start")
             List(extData.getOrElse(Map()).getOrElse("answer", "").asInstanceOf[String])
         }
     }
