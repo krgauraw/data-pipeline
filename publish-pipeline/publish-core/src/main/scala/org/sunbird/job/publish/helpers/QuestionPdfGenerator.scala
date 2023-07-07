@@ -78,8 +78,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
   //Will require index (Need to be got from question set)
   private def populateQuestionsData(questions: List[ObjectData]): Map[String, AnyRef] = {
     logger.info("populateQuestionsData :::: start")
+    logger.info("obj count ::: "+questions.size)
     questions.map(question => question.dbId -> {
-      logger.info("populateQuestionsData :::: question ::: "+question)
+      logger.info(s"populateQuestionsData :::: question ::: ${question.dbId} ::: metadata ::: "+question.metadata)
       val handlerOption = QuestionHandlerFactory.apply(question.metadata.get("primaryCategory").asInstanceOf[Option[String]])
       handlerOption match {
         case Some(handler: QuestionTypeHandler) =>
