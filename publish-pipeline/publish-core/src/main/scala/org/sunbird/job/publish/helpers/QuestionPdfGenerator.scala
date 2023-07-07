@@ -25,7 +25,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
 
   def getPreviewFileUrl(objList: List[ObjectData], obj: ObjectData, templateName: String, fileNameSuffix: String)(implicit cloudStorageUtil: CloudStorageUtil): Option[String] = {
     val fileContent: String = getFileString(objList, obj.getString("name", ""), templateName).getOrElse("")
+    logger.info("getPreviewFileUrl ::: fileContent ::: " + fileContent)
     val fileName: String = s"/tmp/${obj.identifier}_${getHtmlFileSuffix(fileNameSuffix)}"
+    logger.info("getPreviewFileUrl ::: fileName ::: " + fileName)
     val file: Option[File] = writeFile(fileName, fileContent)
     uploadFile(file, obj)
   }
@@ -64,7 +66,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
   }
 
   def getHtmlString(questions: List[ObjectData], title: String, templateName: String): Option[String] = {
+    logger.info("getHtmlString ::: start :::")
     val questionsDataMap = populateQuestionsData(questions)
+    logger.info("getHtmlString :::: questionsDataMap ::: "+questionsDataMap)
     generateHtmlString(questionsDataMap, title, templateName) match {
       case "" => None
       case x: String => Some(x)
@@ -73,7 +77,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
 
   //Will require index (Need to be got from question set)
   private def populateQuestionsData(questions: List[ObjectData]): Map[String, AnyRef] = {
+    logger.info("populateQuestionsData :::: start")
     questions.map(question => question.dbId -> {
+      logger.info("populateQuestionsData :::: question ::: "+question)
       val handlerOption = QuestionHandlerFactory.apply(question.metadata.get("primaryCategory").asInstanceOf[Option[String]])
       handlerOption match {
         case Some(handler: QuestionTypeHandler) =>
@@ -86,7 +92,9 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
   }
 
   private def generateHtmlString(questionsMap: Map[String, AnyRef], title: String, templateName: String): String = {
+    logger.info("generateHtmlString ::: questionsMap ::: " + questionsMap)
     val filteredQMap = questionsMap.filter(entry => entry._2.asInstanceOf[Map[String, AnyRef]].nonEmpty)
+    logger.info("generateHtmlString ::: filteredQMap ::: " + filteredQMap)
     if(filteredQMap.isEmpty) return ""
     val questionString: String = questionsMap.map(entry =>
       s"""
@@ -112,6 +120,7 @@ trait QuestionPdfGenerator extends ObjectTemplateGenerator {
             """.stripMargin
     ).reduce(_ + _)
     val velocityContext: Map[String, AnyRef] = Map("questions" -> questionString, "answers" -> answerString, "title" -> title)
+    logger.info("generateHtmlString ::: velocityContext ::: " + velocityContext)
     handleHtmlTemplate(templateName, velocityContext)
   }
 
