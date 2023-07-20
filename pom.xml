@@ -20,7 +20,8 @@
 	<modules>
 		<module>jobs-core</module>
         <module>publish-pipeline</module>
-	</modules>
+        <module>quml-migrator</module>
+    </modules>
 
     <properties>
         <!-- maven specific properties -->
