@@ -95,13 +95,13 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
 			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
 			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)
-			val updatedMeta: Map[String, AnyRef] = migrGrpahData.asScala.toMap + Map("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
+			val updatedMeta: Map[String, AnyRef] = migrGrpahData.asScala.toMap ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
 			logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Completed Data Transformation For : " + data.identifier)
 			Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData.asScala.toMap), Some(migrHierarchy.asScala.toMap)))
 		} catch {
 			case e: Exception => {
 				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Failed Data Transformation For : " + data.identifier)
-				val updatedMeta: Map[String, AnyRef] = data.metadata + Map("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
+				val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
 				Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
 			}
 		}

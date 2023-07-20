@@ -54,7 +54,7 @@ trait QumlMigrator {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JSONUtil.deserialize[java.util.Map[String, AnyRef](data.get("timeLimits").asInstanceOf[String])
+      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JSONUtil.deserialize[java.util.Map[String, AnyRef]](data.get("timeLimits").asInstanceOf[String])
       val maxTime: Integer = timeLimits.getOrDefault("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)

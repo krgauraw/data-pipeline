@@ -72,15 +72,15 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
   override def migrateQuestion(data: ObjectData): Option[ObjectData] = {
     logger.info("QuestionMigrator ::: migrateQuestion ::: Stating Data Transformation For : " + data.identifier)
     try {
-      val migrGrpahData = migrateGrpahData(data.identifier, data.metadata.asJava).asScala.toMap
-      val migrExtData = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava).asScala.toMap
-      val updatedMeta: Map[String, AnyRef] = migrGrpahData + Map("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
+      val migrGrpahData: Map[String, AnyRef] = migrateGrpahData(data.identifier, data.metadata.asJava).asScala.toMap
+      val migrExtData: Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava).asScala.toMap
+      val updatedMeta: Map[String, AnyRef] = migrGrpahData ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
       logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
       Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData), data.hierarchy))
     } catch {
       case e: Exception => {
         logger.info("QuestionMigrator ::: migrateQuestion ::: Failed Data Transformation For : " + data.identifier)
-        val updatedMeta: Map[String, AnyRef] = data.metadata + Map("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
+        val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
         Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
       }
     }
