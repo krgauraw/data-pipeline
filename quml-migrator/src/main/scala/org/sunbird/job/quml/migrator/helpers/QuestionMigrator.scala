@@ -72,7 +72,18 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
   override def migrateQuestion(data: ObjectData): Option[ObjectData] = {
     logger.info("QuestionMigrator ::: migrateQuestion ::: Stating Data Transformation For : " + data.identifier)
     try {
-      val migrGrpahData: Map[String, AnyRef] = migrateGrpahData(data.identifier, data.metadata.asJava).asScala.toMap
+      val jMeta = data.metadata.asJava
+      logger.info("jMeta ::: "+jMeta)
+      logger.info("type check ::: "+jMeta.isInstanceOf[util.Map[String, AnyRef]])
+      val serial = ScalaJsonUtil.serialize(data.metadata)
+      logger.info("serial data ::: "+serial)
+      val jMap = JSONUtil.deserialize[util.HashMap[String, AnyRef]](serial)
+      logger.info("jMap ::: "+jMap)
+      logger.info("jMap type :: "+jMap.isInstanceOf[util.HashMap[String, AnyRef]])
+      val meta : util.HashMap[String, AnyRef] =  data.metadata.asJava.asInstanceOf[util.HashMap[String, AnyRef]]
+      logger.info("meta ::: "+ meta)
+      logger.info("meta type check ::: "+ meta.isInstanceOf[util.HashMap[String, AnyRef]])
+      val migrGrpahData: Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap).asScala.toMap
       val migrExtData: Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava).asScala.toMap
       val updatedMeta: Map[String, AnyRef] = migrGrpahData ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
       logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
