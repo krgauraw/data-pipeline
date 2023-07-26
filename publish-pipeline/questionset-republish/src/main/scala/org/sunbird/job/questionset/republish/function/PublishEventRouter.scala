@@ -35,11 +35,11 @@ class PublishEventRouter(config: QuestionSetRePublishConfig) extends BaseProcess
 			event.objectType match {
 				case "Question" => {
 					logger.info("PublishEventRouter :: Sending Question For RePublish Having Identifier: " + event.objectId)
-					context.output(config.questionRePublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy))
+					context.output(config.questionRePublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case "QuestionSet" => {
 					logger.info("PublishEventRouter :: Sending QuestionSet For RePublish Having Identifier: " + event.objectId)
-					context.output(config.questionSetRePublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy))
+					context.output(config.questionSetRePublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case _ => {
 					metrics.incCounter(config.skippedEventCount)
