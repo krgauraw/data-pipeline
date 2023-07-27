@@ -75,21 +75,30 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       val jMeta = data.metadata.asJava
       logger.info("jMeta ::: "+jMeta)
       logger.info("type check ::: "+jMeta.isInstanceOf[util.Map[String, AnyRef]])
+      logger.info("type check hash::: "+jMeta.isInstanceOf[util.HashMap[String, AnyRef]])
+
+      val newMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]().putAll(jMeta)
+      logger.info("newMap ::: "+newMap)
+      logger.info("newMap type check ::: "+newMap.isInstanceOf[util.HashMap[String, AnyRef]])
+      val b = newMap.remove("bloomsLevel")
+      logger.info("b :::: "+b)
+
       val serial = ScalaJsonUtil.serialize(data.metadata)
       logger.info("serial data ::: "+serial)
-      val jMap = JSONUtil.deserialize[util.HashMap[String, AnyRef]](serial)
+      val jMap = ScalaJsonUtil.deserialize[util.HashMap[String, AnyRef]](serial)
       logger.info("jMap ::: "+jMap)
       logger.info("jMap type :: "+jMap.isInstanceOf[util.HashMap[String, AnyRef]])
-      val meta : util.HashMap[String, AnyRef] =  data.metadata.asJava.asInstanceOf[util.HashMap[String, AnyRef]]
+     /* val meta : util.HashMap[String, AnyRef] =  data.metadata.asJava.asInstanceOf[util.HashMap[String, AnyRef]]
       logger.info("meta ::: "+ meta)
-      logger.info("meta type check ::: "+ meta.isInstanceOf[util.HashMap[String, AnyRef]])
+      logger.info("meta type check ::: "+ meta.isInstanceOf[util.HashMap[String, AnyRef]])*/
       val migrGrpahData: Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap).asScala.toMap
       val migrExtData: Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava).asScala.toMap
       val updatedMeta: Map[String, AnyRef] = migrGrpahData ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
       logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
       Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData), data.hierarchy))
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
+        e.printStackTrace()
         logger.info("QuestionMigrator ::: migrateQuestion ::: Failed Data Transformation For : " + data.identifier)
         val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
         Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
@@ -105,7 +114,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
         data
       } else data
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
         e.printStackTrace()
         throw new Exception(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier}")
       }
@@ -126,7 +135,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
         data
       } else data
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
         e.printStackTrace()
         throw new Exception(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier}")
       }
