@@ -4,9 +4,11 @@ import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, QueryBuilder, Select}
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
+import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util._
+
 import scala.collection.JavaConverters._
 import java.util
 
@@ -69,34 +71,37 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
     }
   }
 
-  override def migrateQuestion(data: ObjectData): Option[ObjectData] = {
+  def getFormatedData(data: String, dType: String): AnyRef = {
+    val value = dType match {
+      case "object" => JSONUtil.deserialize[util.Map[String, AnyRef]](data)
+      case "array" => JSONUtil.deserialize[util.List[Object]](data)
+      case _ => data
+    }
+    logger.info(s"getFormatedData ::: dType ::: ${dType} :::: formated value ::: "+value)
+    return value
+
+  }
+
+  override def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {
     logger.info("QuestionMigrator ::: migrateQuestion ::: Stating Data Transformation For : " + data.identifier)
     try {
-      val jMeta = data.metadata.asJava
-      logger.info("jMeta ::: "+jMeta)
-      logger.info("type check ::: "+jMeta.isInstanceOf[util.Map[String, AnyRef]])
-      logger.info("type check hash::: "+jMeta.isInstanceOf[util.HashMap[String, AnyRef]])
-
-      val newMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
-      newMap.putAll(jMeta)
-      logger.info("newMap ::: "+newMap)
-      logger.info("newMap type check ::: "+newMap.isInstanceOf[util.HashMap[String, AnyRef]])
-      val b = newMap.remove("bloomsLevel")
-      logger.info("b :::: "+b)
-
-      val serial = ScalaJsonUtil.serialize(data.metadata)
-      logger.info("serial data ::: "+serial)
-      val jMap = ScalaJsonUtil.deserialize[util.HashMap[String, AnyRef]](serial)
-      logger.info("jMap ::: "+jMap)
-      logger.info("jMap type :: "+jMap.isInstanceOf[util.HashMap[String, AnyRef]])
-     /* val meta : util.HashMap[String, AnyRef] =  data.metadata.asJava.asInstanceOf[util.HashMap[String, AnyRef]]
-      logger.info("meta ::: "+ meta)
-      logger.info("meta type check ::: "+ meta.isInstanceOf[util.HashMap[String, AnyRef]])*/
+      val jMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+      jMap.putAll(data.metadata.asJava)
+      val extMeta: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+      val propsMapping: Map[String, String] = definition.getPropsType(definition.externalProperties)
+      data.extData.getOrElse(Map[String, AnyRef]()).foreach(x => {
+        if(List("body","answer").contains(x._1))
+          extMeta.put(x._1, x._2)
+        else
+          extMeta.put(x._1, getFormatedData(x._2.asInstanceOf[String], propsMapping.getOrElse(x._1, "")))
+      })
+      extMeta.put("primaryCategory", jMap.getOrDefault("primaryCategory", "").asInstanceOf[String])
+      val migratedExtData = migrateExtData(data.identifier, extMeta)
+      migratedExtData.remove("primaryCategory")
       val migrGrpahData: Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap).asScala.toMap
-      val migrExtData: Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava).asScala.toMap
       val updatedMeta: Map[String, AnyRef] = migrGrpahData ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
       logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
-      Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData), data.hierarchy))
+      Some(new ObjectData(data.identifier, updatedMeta, Some(migratedExtData.asScala.toMap), data.hierarchy))
     } catch {
       case e: Throwable => {
         e.printStackTrace()
@@ -143,7 +148,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
     }
   }
 
-  override def migrateQuestionSet(data: ObjectData): Option[ObjectData] = None
+  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
 
 
 }

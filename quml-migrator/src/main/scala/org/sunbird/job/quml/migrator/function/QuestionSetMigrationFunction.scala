@@ -56,7 +56,7 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
     val objData = getObject(data.identifier, readerConfig)(neo4JUtil, cassandraUtil, config)
     val messages: List[String] = validateQuestionSet(data.identifier, objData)(neo4JUtil)
     if (messages.isEmpty) {
-      val migratedObj: ObjectData = migrateQuestionSet(objData).getOrElse(objData)
+      val migratedObj: ObjectData = migrateQuestionSet(objData)(definition).getOrElse(objData)
       val status = migratedObj.metadata.getOrElse("status", "").asInstanceOf[String]
       val qumlVersion: Double = migratedObj.metadata.getOrElse("qumlVersion", 1.0).asInstanceOf[Double]
       val migrationVersion: Double = migratedObj.metadata.getOrElse("migrationVersion", 0.0).asInstanceOf[Double]

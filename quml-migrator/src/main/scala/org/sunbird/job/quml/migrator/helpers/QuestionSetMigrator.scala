@@ -4,7 +4,7 @@ import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, Insert, QueryBuilder}
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
-import org.sunbird.job.domain.`object`.{DefinitionCache}
+import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util.{CassandraUtil, JSONUtil, Neo4JUtil, ScalaJsonUtil}
@@ -83,7 +83,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		result
 	}
 
-	override def migrateQuestionSet(data: ObjectData): Option[ObjectData] = {
+	override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {
 		logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Stating Data Transformation For : " + data.identifier)
 		try {
 			val migrGrpahData:  util.Map[String, AnyRef] = migrateGrpahData(data.identifier, data.metadata.asJava)
@@ -207,5 +207,5 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		}
 	}
 
-	override def migrateQuestion(data: ObjectData): Option[ObjectData] = None
+	override def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
 }

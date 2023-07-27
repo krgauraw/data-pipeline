@@ -2,6 +2,7 @@ package org.sunbird.job.quml.migrator.helpers
 
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
 import org.sunbird.job.util.JSONUtil
 
@@ -14,9 +15,9 @@ trait QumlMigrator {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QumlMigrator])
 
-  def migrateQuestion(data: ObjectData): Option[ObjectData]
+  def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
 
-  def migrateQuestionSet(data: ObjectData): Option[ObjectData]
+  def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
 
   def processMaxScore(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("maxScore")) {
