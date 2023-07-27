@@ -77,7 +77,8 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       logger.info("type check ::: "+jMeta.isInstanceOf[util.Map[String, AnyRef]])
       logger.info("type check hash::: "+jMeta.isInstanceOf[util.HashMap[String, AnyRef]])
 
-      val newMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]().putAll(jMeta)
+      val newMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+      newMap.putAll(jMeta)
       logger.info("newMap ::: "+newMap)
       logger.info("newMap type check ::: "+newMap.isInstanceOf[util.HashMap[String, AnyRef]])
       val b = newMap.remove("bloomsLevel")
