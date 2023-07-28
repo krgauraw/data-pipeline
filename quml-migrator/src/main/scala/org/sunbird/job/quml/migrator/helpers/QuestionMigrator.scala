@@ -2,17 +2,21 @@ package org.sunbird.job.quml.migrator.helpers
 
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, QueryBuilder, Select}
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
+import org.sunbird.job.util.JSONUtil.typeReference
 import org.sunbird.job.util._
 
 import scala.collection.JavaConverters._
 import java.util
 
 trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater with QumlMigrator {
+
+  private val mapper = new ObjectMapper()
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QuestionMigrator])
 
@@ -72,9 +76,10 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
   }
 
   def getFormatedData(data: String, dType: String): AnyRef = {
+    logger.info("data ::: "+data)
     val value = dType match {
-      case "object" => JSONUtil.deserialize[util.Map[String, AnyRef]](data)
-      case "array" => JSONUtil.deserialize[util.List[Object]](data)
+      case "object" => mapper.readValue(data, classOf[util.Map[String, AnyRef]])
+      case "array" => mapper.readValue(data, classOf[util.List[util.Map[String, AnyRef]]])
       case _ => data
     }
     logger.info(s"getFormatedData ::: dType ::: ${dType} :::: formated value ::: "+value)
