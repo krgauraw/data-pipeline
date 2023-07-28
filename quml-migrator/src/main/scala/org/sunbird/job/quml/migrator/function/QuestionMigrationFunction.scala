@@ -46,7 +46,7 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
   }
 
   override def metricsList(): List[String] = {
-    List(config.questionMigrationCount, config.questionMigrationSuccessEventCount, config.questionMigrationFailedEventCount, config.questionRepublishEventCount)
+    List(config.questionMigrationCount, config.questionMigrationSuccessEventCount, config.questionMigrationFailedEventCount, config.questionRepublishEventCount, config.questionMigrationSkippedEventCount)
   }
 
   override def processElement(data: MigrationMetadata, context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics): Unit = {
