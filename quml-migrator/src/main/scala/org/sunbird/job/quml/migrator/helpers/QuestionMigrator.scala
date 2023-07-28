@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
-import org.sunbird.job.util.JSONUtil.typeReference
 import org.sunbird.job.util._
 
 import scala.collection.JavaConverters._
