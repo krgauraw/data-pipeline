@@ -211,7 +211,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		logger.info("///// saveExternalData ::: readerConfig ::: "+readerConfig.primaryKey)
 
 		val identifier = obj.identifier
-		val data = obj.hierarchy.getOrElse(Map()) ++ obj.extData.getOrElse(Map())
+		var data = Map[String, AnyRef]("hierarchy"-> obj.hierarchy.getOrElse(Map())) ++ obj.extData.getOrElse(Map())
 		logger.info("////// saveExternalData :::  data after merge "+data)
 		val query: Insert = QueryBuilder.insertInto(readerConfig.keyspace, readerConfig.table)
 		query.value(readerConfig.primaryKey(0), identifier)
