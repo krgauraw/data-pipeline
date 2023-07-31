@@ -62,7 +62,7 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
       val migrationVersion: Double = migratedObj.metadata.getOrElse("migrationVersion", 0.0).asInstanceOf[Double]
       if (migrationVersion == 3.0 && qumlVersion == 1.1) {
         val upgradedQumlDef: ObjectDefinition = definitionCache.getDefinition(data.objectType, qumlVersion.toString, config.definitionBasePath)
-        val qumlReaderConfig = ExtDataConfig(config.questionKeyspaceName, upgradedQumlDef.getExternalTable, upgradedQumlDef.getExternalPrimaryKey, upgradedQumlDef.getExternalProps)
+        val qumlReaderConfig = ExtDataConfig(config.questionSetKeyspaceName, upgradedQumlDef.getExternalTable, upgradedQumlDef.getExternalPrimaryKey, upgradedQumlDef.getExternalProps)
         saveOnSuccess(migratedObj)(neo4JUtil, cassandraUtil, qumlReaderConfig, definitionCache, config)
         metrics.incCounter(config.questionSetMigrationSuccessEventCount)
         logger.info("QuestionSet Migration Successful For : " + data.identifier)
