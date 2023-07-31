@@ -43,10 +43,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		val row: Row = getQuestionSetData(identifier, readerConfig)
 		val data: Map[String, AnyRef] = if (null != row) readerConfig.propsMapping.keySet.map(prop => prop -> row.getString(prop.toLowerCase())).toMap.filter(p => StringUtils.isNotBlank(p._2.asInstanceOf[String])) else Map[String, AnyRef]()
 		val hData: String = data.getOrElse("hierarchy", "{}").asInstanceOf[String]
-		val hierarchy = if (data.contains("hierarchy")) mapper.readValue(hData, classOf[util.Map[String, AnyRef]]) else new util.HashMap[String, AnyRef]()
-		//val hierarchy: Map[String, AnyRef] = if (data.contains("hierarchy")) ScalaJsonUtil.deserialize[Map[String, AnyRef]](hData) else Map[String, AnyRef]()
+		//val hierarchy = if (data.contains("hierarchy")) mapper.readValue(hData, classOf[util.Map[String, AnyRef]]) else new util.HashMap[String, AnyRef]()
+		val hierarchy: Map[String, AnyRef] = if (data.contains("hierarchy")) ScalaJsonUtil.deserialize[Map[String, AnyRef]](hData) else Map[String, AnyRef]()
 		val extData: Map[String, AnyRef] = data.filter(p => !StringUtils.equals("hierarchy", p._1))
-		Option(ObjectExtData(Option(extData), Option(hierarchy.asScala.toMap)))
+		Option(ObjectExtData(Option(extData), Option(hierarchy)))
 	}
 
 	def getQuestionSetData(identifier: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Row = {
@@ -106,13 +106,13 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			logger.info("children ::: "+children)
 			val hMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 			hMap.putAll(data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
-
+			logger.info("hMap :::: "+hMap)
 			val migrGrpahData:  util.Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap)
 			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, extMeta)
 			val outcomeDeclaration: util.Map[String, AnyRef] = migrGrpahData.getOrDefault("outcomeDeclaration", Map[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
 			migrGrpahData.remove("outcomeDeclaration")
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
-			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hMap)
+			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, jHierarchy)
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
 			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
 			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)
