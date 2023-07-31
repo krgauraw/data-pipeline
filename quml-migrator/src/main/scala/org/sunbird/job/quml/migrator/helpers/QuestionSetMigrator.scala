@@ -8,6 +8,7 @@ import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util.{CassandraUtil, JSONUtil, Neo4JUtil, ScalaJsonUtil}
+import com.fasterxml.jackson.databind.ObjectMapper
 
 import java.util
 import scala.collection.JavaConversions._
@@ -17,6 +18,8 @@ import scala.collection.mutable.ListBuffer
 trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpdater with QumlMigrator {
 
 	private[this] val logger = LoggerFactory.getLogger(classOf[QuestionSetMigrator])
+
+	private val mapper = new ObjectMapper()
 
 	def validateQuestionSet(identifier: String, obj: ObjectData)(implicit neo4JUtil: Neo4JUtil): List[String] = {
 		val messages = ListBuffer[String]()
@@ -86,12 +89,21 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 	override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {
 		logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Stating Data Transformation For : " + data.identifier)
 		try {
-			val migrGrpahData:  util.Map[String, AnyRef] = migrateGrpahData(data.identifier, data.metadata.asJava)
-			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava)
+			val jMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+			jMap.putAll(data.metadata.asJava)
+
+			val extMeta: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+			val instructions = data.extData.getOrElse(Map[String, AnyRef]()).asJava.getOrElse("instructions", "{}").asInstanceOf[String]
+			extMeta.put("instructions", mapper.readValue(instructions, classOf[util.Map[String, AnyRef]]))
+			val hMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+			hMap.putAll(data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
+
+			val migrGrpahData:  util.Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap)
+			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, extMeta)
 			val outcomeDeclaration: util.Map[String, AnyRef] = migrGrpahData.getOrDefault("outcomeDeclaration", Map[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
 			migrGrpahData.remove("outcomeDeclaration")
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
-			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
+			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hMap)
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
 			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
 			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)

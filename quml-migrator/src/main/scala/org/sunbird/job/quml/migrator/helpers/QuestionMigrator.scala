@@ -83,7 +83,6 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
     }
     logger.info(s"getFormatedData ::: dType ::: ${dType} :::: formated value ::: "+value)
     return value
-
   }
 
   override def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {

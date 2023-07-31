@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
 import org.sunbird.job.util.JSONUtil
+import com.fasterxml.jackson.databind.ObjectMapper
 
 import java.util
 import java.util.UUID
@@ -14,6 +15,8 @@ import scala.collection.JavaConverters._
 trait QumlMigrator {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QumlMigrator])
+
+  private val mapper = new ObjectMapper()
 
   def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
 
@@ -40,6 +43,7 @@ trait QumlMigrator {
     if (data.containsKey("bloomsLevel")) {
       val bLevel = data.remove("bloomsLevel")
       data.put("complexityLevel", List(bLevel.toString).asJava)
+      data.remove("bloomsLevel")
     }
   }
 
@@ -55,7 +59,7 @@ trait QumlMigrator {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JSONUtil.deserialize[java.util.Map[String, AnyRef]](data.get("timeLimits").asInstanceOf[String])
+      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else mapper.readValue(data.get("timeLimits").asInstanceOf[String], classOf[util.Map[String, AnyRef]])
       val maxTime: Integer = timeLimits.getOrDefault("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)

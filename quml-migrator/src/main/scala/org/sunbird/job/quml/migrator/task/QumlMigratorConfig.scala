@@ -56,7 +56,8 @@ class QumlMigratorConfig(override val config: Config) extends BaseJobConfig(conf
 	// Out Tags
 	val questionMigrationOutTag: OutputTag[MigrationMetadata] = OutputTag[MigrationMetadata]("question-migration")
 	val questionSetMigrationOutTag: OutputTag[MigrationMetadata] = OutputTag[MigrationMetadata]("questionset-migration")
-	val liveNodePublishEventOutTag: OutputTag[String] = OutputTag[String]("live-node-republish-request")
+	val liveQuestionPublishEventOutTag: OutputTag[String] = OutputTag[String]("live-question-republish-request")
+	val liveQuestionSetPublishEventOutTag: OutputTag[String] = OutputTag[String]("live-questionset-republish-request")
 
 	val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
 

@@ -30,13 +30,14 @@ class QumlMigratorStreamTask(config: QumlMigratorConfig, kafkaConnector: FlinkKa
 		  .name("migration-event-router").uid("migration-event-router")
 		  .setParallelism(config.eventRouterParallelism)
 
-		processStreamTask.getSideOutput(config.questionMigrationOutTag).process(new QuestionMigrationFunction(config, httpUtil))
+		val questionStream =  processStreamTask.getSideOutput(config.questionMigrationOutTag).process(new QuestionMigrationFunction(config, httpUtil))
 		  .name("question-migration-process").uid("question-migration-process").setParallelism(1)
 
-		processStreamTask.getSideOutput(config.questionSetMigrationOutTag).process(new QuestionSetMigrationFunction(config, httpUtil))
+		val questionSetStream = processStreamTask.getSideOutput(config.questionSetMigrationOutTag).process(new QuestionSetMigrationFunction(config, httpUtil))
 		  .name("questionset-migration-process").uid("questionset-migration-process").setParallelism(1)
 
-		processStreamTask.getSideOutput(config.liveNodePublishEventOutTag).addSink(kafkaConnector.kafkaStringSink(config.republishTopic))
+		questionStream.getSideOutput(config.liveQuestionPublishEventOutTag).addSink(kafkaConnector.kafkaStringSink(config.republishTopic))
+		questionSetStream.getSideOutput(config.liveQuestionSetPublishEventOutTag).addSink(kafkaConnector.kafkaStringSink(config.republishTopic))
 		env.execute(config.jobName)
 	}
 }
