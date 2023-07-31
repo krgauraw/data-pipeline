@@ -46,7 +46,7 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
   }
 
   override def metricsList(): List[String] = {
-    List(config.questionMigrationCount, config.questionMigrationSuccessEventCount, config.questionMigrationFailedEventCount, config.questionRepublishEventCount)
+    List(config.questionMigrationCount, config.questionMigrationSuccessEventCount, config.questionMigrationFailedEventCount, config.questionRepublishEventCount, config.questionMigrationSkippedEventCount)
   }
 
   override def processElement(data: MigrationMetadata, context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics): Unit = {
@@ -57,7 +57,7 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
     val objData = getObject(data.identifier, readerConfig)(neo4JUtil, cassandraUtil, config)
     val messages: List[String] = validateQuestion(data.identifier, objData)(config)
     if(messages.isEmpty) {
-      val migratedObj: ObjectData = migrateQuestion(objData).getOrElse(objData)
+      val migratedObj: ObjectData = migrateQuestion(objData)(definition).getOrElse(objData)
       val status = migratedObj.metadata.getOrElse("status", "").asInstanceOf[String]
       val qumlVersion: Double = migratedObj.metadata.getOrElse("qumlVersion", 1.0).asInstanceOf[Double]
       val migrationVersion: Double = migratedObj.metadata.getOrElse("migrationVersion", 0.0).asInstanceOf[Double]
@@ -117,10 +117,10 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
     val publishType = if (status.equalsIgnoreCase("Live")) "Public" else "Unlisted"
     val channel = objMetadata.getOrElse("channel", "").asInstanceOf[String]
     val lastPublishedBy = objMetadata.getOrElse("lastPublishedBy", "System").asInstanceOf[String]
-    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"question-republish","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${config.jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":$schemaVersion},"action":"republish","iteration":1}}"""
+    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"question-republish","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${config.jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":"$schemaVersion"},"action":"republish","iteration":1}}"""
     logger.info(s"QuestionMigrationFunction :: Live ${objectType} re-publish triggered for " + identifier)
     logger.info(s"QuestionMigrationFunction :: Live ${objectType} re-publish event: " + event)
-    context.output(config.liveNodePublishEventOutTag, event)
+    context.output(config.liveQuestionPublishEventOutTag, event)
     metrics.incCounter(config.questionRepublishEventCount)
   }
 }

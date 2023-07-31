@@ -4,10 +4,10 @@ import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, Insert, QueryBuilder}
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
-import org.sunbird.job.domain.`object`.{DefinitionCache}
+import org.sunbird.job.domain.`object`.{ObjectDefinition}
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
-import org.sunbird.job.util.{CassandraUtil, JSONUtil, Neo4JUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{CassandraUtil, Neo4JUtil, ScalaJsonUtil}
 
 import java.util
 import scala.collection.JavaConversions._
@@ -83,15 +83,25 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		result
 	}
 
-	override def migrateQuestionSet(data: ObjectData): Option[ObjectData] = {
+	override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {
 		logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Stating Data Transformation For : " + data.identifier)
 		try {
-			val migrGrpahData:  util.Map[String, AnyRef] = migrateGrpahData(data.identifier, data.metadata.asJava)
-			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, data.extData.getOrElse(Map[String, AnyRef]()).asJava)
+			val metaMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+			metaMap.putAll(data.metadata.asJava)
+			val extMeta: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+			if(data.extData.getOrElse(Map[String, AnyRef]()).contains("instructions")) {
+				val instructions = data.extData.getOrElse(Map[String, AnyRef]()).asJava.getOrElse("instructions", "{}").asInstanceOf[String]
+				extMeta.put("instructions", mapper.readValue(instructions, classOf[util.Map[String, AnyRef]]))
+			}
+			val hStr: String = ScalaJsonUtil.serialize(data.hierarchy.getOrElse(Map[String, AnyRef]()))
+			val hierarchyData = mapper.readValue(hStr, classOf[util.Map[String, AnyRef]])
+			val migrGrpahData: util.Map[String, AnyRef] = migrateGrpahData(data.identifier, metaMap)
+			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, extMeta)
 			val outcomeDeclaration: util.Map[String, AnyRef] = migrGrpahData.getOrDefault("outcomeDeclaration", Map[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
 			migrGrpahData.remove("outcomeDeclaration")
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
-			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
+			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hierarchyData)
+
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
 			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
 			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)
@@ -142,7 +152,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		try {
 			if (!data.isEmpty) {
 				logger.info(s"QuestionSetMigrator ::: migrateHierarchy ::: Hierarchy migration stated for ${identifier}")
-				if(data.containsKey())data.remove("maxScore")
+				if(data.containsKey("maxScore")) data.remove("maxScore")
 				data.remove("version")
 				processInstructions(data)
 				processBloomsLevel(data)
@@ -183,7 +193,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 
 	override def saveExternalData(obj: ObjectData, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
 		val identifier = obj.identifier
-		val data = obj.hierarchy.getOrElse(Map()) ++ obj.extData.getOrElse(Map())
+		var data = Map[String, AnyRef]("hierarchy"-> obj.hierarchy.getOrElse(Map())) ++ obj.extData.getOrElse(Map())
 		val query: Insert = QueryBuilder.insertInto(readerConfig.keyspace, readerConfig.table)
 		query.value(readerConfig.primaryKey(0), identifier)
 		data.map(d => {
@@ -191,13 +201,13 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				case "blob" => query.value(d._1.toLowerCase, QueryBuilder.fcall("textAsBlob", d._2))
 				case "string" => d._2 match {
 					case value: String => query.value(d._1.toLowerCase, value)
-					case _ => query.value(d._1.toLowerCase, JSONUtil.serialize(d._2))
+					case _ => query.value(d._1.toLowerCase, ScalaJsonUtil.serialize(d._2))
 				}
 				case _ => query.value(d._1, d._2)
 			}
 		})
-		logger.debug(s"Saving object external data for $identifier | Query : ${query.toString}")
-		val result = cassandraUtil.upsert(query.toString, true)
+		logger.info(s"Saving object external data for $identifier | Query : ${query.toString}")
+		val result = cassandraUtil.upsert(query.toString, false)
 		if (result) {
 			logger.info(s"Object external data saved successfully for ${identifier}")
 		} else {
@@ -207,5 +217,5 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		}
 	}
 
-	override def migrateQuestion(data: ObjectData): Option[ObjectData] = None
+	override def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
 }

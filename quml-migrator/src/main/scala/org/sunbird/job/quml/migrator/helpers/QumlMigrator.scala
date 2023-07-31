@@ -1,7 +1,9 @@
 package org.sunbird.job.quml.migrator.helpers
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
 import org.sunbird.job.util.JSONUtil
 
@@ -14,9 +16,11 @@ trait QumlMigrator {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QumlMigrator])
 
-  def migrateQuestion(data: ObjectData): Option[ObjectData]
+  protected val mapper = new ObjectMapper()
 
-  def migrateQuestionSet(data: ObjectData): Option[ObjectData]
+  def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
+
+  def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
 
   def processMaxScore(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("maxScore")) {
@@ -54,7 +58,7 @@ trait QumlMigrator {
 
   def processTimeLimits(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("timeLimits")) {
-      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else JSONUtil.deserialize[java.util.Map[String, AnyRef]](data.get("timeLimits").asInstanceOf[String])
+      val timeLimits: util.Map[String, AnyRef] = if (data.get("timeLimits").isInstanceOf[util.Map[String, AnyRef]]) data.getOrDefault("timeLimits", Map().asJava).asInstanceOf[util.Map[String, AnyRef]] else mapper.readValue(data.get("timeLimits").asInstanceOf[String], classOf[util.Map[String, AnyRef]])
       val maxTime: Integer = timeLimits.getOrDefault("maxTime", "0").asInstanceOf[String].toInt
       val updatedData: util.Map[String, AnyRef] = Map("questionSet" -> Map("max" -> maxTime, "min" -> 0.asInstanceOf[AnyRef]).asJava).asJava.asInstanceOf[util.Map[String, AnyRef]]
       data.put("timeLimits", updatedData)
@@ -187,6 +191,5 @@ trait QumlMigrator {
       }
     } else ""
   }
-
 
 }
