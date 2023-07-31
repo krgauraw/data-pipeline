@@ -204,8 +204,15 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 	}
 
 	override def saveExternalData(obj: ObjectData, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
+		logger.info("///// saveExternalData ::: start")
+		logger.info("///// saveExternalData ::: obj.extData ::: "+obj.extData.getOrElse(Map()))
+		logger.info("///// saveExternalData ::: obj.hierarchy ::: "+obj.hierarchy.getOrElse(Map()))
+		logger.info("///// saveExternalData ::: readerConfig ::: "+readerConfig.propsMapping)
+		logger.info("///// saveExternalData ::: readerConfig ::: "+readerConfig.primaryKey)
+
 		val identifier = obj.identifier
 		val data = obj.hierarchy.getOrElse(Map()) ++ obj.extData.getOrElse(Map())
+		logger.info("////// saveExternalData :::  data after merge "+data)
 		val query: Insert = QueryBuilder.insertInto(readerConfig.keyspace, readerConfig.table)
 		query.value(readerConfig.primaryKey(0), identifier)
 		data.map(d => {
@@ -213,13 +220,13 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				case "blob" => query.value(d._1.toLowerCase, QueryBuilder.fcall("textAsBlob", d._2))
 				case "string" => d._2 match {
 					case value: String => query.value(d._1.toLowerCase, value)
-					case _ => query.value(d._1.toLowerCase, JSONUtil.serialize(d._2))
+					case _ => query.value(d._1.toLowerCase, ScalaJsonUtil.serialize(d._2))
 				}
 				case _ => query.value(d._1, d._2)
 			}
 		})
-		logger.debug(s"Saving object external data for $identifier | Query : ${query.toString}")
-		val result = cassandraUtil.upsert(query.toString, true)
+		logger.info(s"Saving object external data for $identifier | Query : ${query.toString}")
+		val result = cassandraUtil.upsert(query.toString, false)
 		if (result) {
 			logger.info(s"Object external data saved successfully for ${identifier}")
 		} else {
