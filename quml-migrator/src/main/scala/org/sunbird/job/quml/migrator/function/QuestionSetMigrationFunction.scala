@@ -99,7 +99,7 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
     val publishType = if (status.equalsIgnoreCase("Live")) "Public" else "Unlisted"
     val channel = objMetadata.getOrElse("channel", "").asInstanceOf[String]
     val lastPublishedBy = objMetadata.getOrElse("lastPublishedBy", "System").asInstanceOf[String]
-    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"republish","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${config.jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":$schemaVersion},"action":"republish","iteration":1}}"""
+    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"republish","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${config.jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":"$schemaVersion"},"action":"republish","iteration":1}}"""
     logger.info(s"QuestionSetMigrationFunction :: Live ${objectType} re-publish triggered for " + identifier)
     logger.info(s"QuestionSetMigrationFunction :: Live ${objectType} re-publish event: " + event)
     context.output(config.liveQuestionSetPublishEventOutTag, event)
