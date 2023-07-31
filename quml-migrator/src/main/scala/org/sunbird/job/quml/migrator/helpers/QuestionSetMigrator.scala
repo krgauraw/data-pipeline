@@ -43,9 +43,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		val row: Row = getQuestionSetData(identifier, readerConfig)
 		val data: Map[String, AnyRef] = if (null != row) readerConfig.propsMapping.keySet.map(prop => prop -> row.getString(prop.toLowerCase())).toMap.filter(p => StringUtils.isNotBlank(p._2.asInstanceOf[String])) else Map[String, AnyRef]()
 		val hData: String = data.getOrElse("hierarchy", "{}").asInstanceOf[String]
-		val hierarchy: Map[String, AnyRef] = if (data.contains("hierarchy")) ScalaJsonUtil.deserialize[Map[String, AnyRef]](hData) else Map[String, AnyRef]()
+		val hierarchy = if (data.contains("hierarchy")) mapper.readValue(hData, classOf[util.Map[String, AnyRef]]) else new util.HashMap[String, AnyRef]()
+		//val hierarchy: Map[String, AnyRef] = if (data.contains("hierarchy")) ScalaJsonUtil.deserialize[Map[String, AnyRef]](hData) else Map[String, AnyRef]()
 		val extData: Map[String, AnyRef] = data.filter(p => !StringUtils.equals("hierarchy", p._1))
-		Option(ObjectExtData(Option(extData), Option(hierarchy)))
+		Option(ObjectExtData(Option(extData), Option(hierarchy.asScala.toMap)))
 	}
 
 	def getQuestionSetData(identifier: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Row = {
@@ -95,6 +96,14 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			val extMeta: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 			val instructions = data.extData.getOrElse(Map[String, AnyRef]()).asJava.getOrElse("instructions", "{}").asInstanceOf[String]
 			extMeta.put("instructions", mapper.readValue(instructions, classOf[util.Map[String, AnyRef]]))
+			logger.info("hmap 1::: "+data.hierarchy.getOrElse(Map[String, AnyRef]()))
+			logger.info("hmap 2::: "+data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
+
+			val hh : String = ScalaJsonUtil.serialize(data.hierarchy.getOrElse(Map[String, AnyRef]()))
+			logger.info("hierarchy serialized :::: "+ hh)
+			val jHierarchy = mapper.readValue(hh, classOf[util.Map[String, AnyRef]])
+			val children = jHierarchy.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
+			logger.info("children ::: "+children)
 			val hMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 			hMap.putAll(data.hierarchy.getOrElse(Map[String, AnyRef]()).asJava)
 
@@ -154,7 +163,8 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		try {
 			if (!data.isEmpty) {
 				logger.info(s"QuestionSetMigrator ::: migrateHierarchy ::: Hierarchy migration stated for ${identifier}")
-				if(data.containsKey())data.remove("maxScore")
+				logger.info("hierarchy data :::: "+data)
+				if(data.containsKey("maxScore"))data.remove("maxScore")
 				data.remove("version")
 				processInstructions(data)
 				processBloomsLevel(data)
