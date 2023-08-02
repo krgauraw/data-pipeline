@@ -233,6 +233,14 @@ class QumlMigratorSpec extends FlatSpec with BeforeAndAfterAll with Matchers wit
     assert(solOut.size() == 1)
   }
 
+  "getRepublishEvent" should "return kafka event for republish" in {
+    val data = Map[String, AnyRef]("identifier" -> "do_123", "pkgVersion" -> 1.asInstanceOf[AnyRef], "objectType" -> "Question", "mimeType" -> "application/vnd.sunbird.question", "status" -> "Live", "schemaVersion" -> "1.1", "channel" -> "test", "lastPublishedBy" -> "test-user")
+    val obj = new TestQumlMigrator()
+    val event = obj.getRepublishEvent(data, "question-republish", "local")
+    assert(StringUtils.isNotBlank(event))
+    assert(event.contains("republish"))
+  }
+
 }
 
 class TestQumlMigrator extends QumlMigrator {

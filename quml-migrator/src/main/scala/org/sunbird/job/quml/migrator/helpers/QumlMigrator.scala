@@ -192,4 +192,20 @@ trait QumlMigrator {
     } else ""
   }
 
+  def getRepublishEvent(objMetadata: Map[String, Object], actorId: String, jobEnv: String): String = {
+    val epochTime = System.currentTimeMillis
+    val identifier = objMetadata.getOrElse("identifier", "").asInstanceOf[String]
+    val pkgVersion = objMetadata.getOrElse("pkgVersion", "").asInstanceOf[Number]
+    val objectType = objMetadata.getOrElse("objectType", "").asInstanceOf[String]
+    val mimeType = objMetadata.getOrElse("mimeType", "").asInstanceOf[String]
+    val status = objMetadata.getOrElse("status", "").asInstanceOf[String]
+    val schemaVersion = objMetadata.getOrElse("schemaVersion", "").asInstanceOf[String]
+    val publishType = if (status.equalsIgnoreCase("Live")) "Public" else "Unlisted"
+    val channel = objMetadata.getOrElse("channel", "").asInstanceOf[String]
+    val lastPublishedBy = objMetadata.getOrElse("lastPublishedBy", "System").asInstanceOf[String]
+    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"${actorId}","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":"$schemaVersion"},"action":"republish","iteration":1}}"""
+    logger.info(s"Live ${objectType} re-publish triggered for " + identifier + " | event: " + event)
+    event
+  }
+
 }

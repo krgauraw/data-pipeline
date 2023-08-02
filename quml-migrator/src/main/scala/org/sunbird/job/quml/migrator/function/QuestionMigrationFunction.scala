@@ -107,20 +107,7 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
   }
 
   def pushQuestionPublishEvent(objMetadata: Map[String, AnyRef], context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics, config: QumlMigratorConfig): Unit = {
-    val epochTime = System.currentTimeMillis
-    val identifier = objMetadata.getOrElse("identifier", "").asInstanceOf[String]
-    val pkgVersion = objMetadata.getOrElse("pkgVersion", "").asInstanceOf[Number]
-    val objectType = objMetadata.getOrElse("objectType", "").asInstanceOf[String]
-    val mimeType = objMetadata.getOrElse("mimeType", "").asInstanceOf[String]
-    val status = objMetadata.getOrElse("status", "").asInstanceOf[String]
-    val schemaVersion = objMetadata.getOrElse("schemaVersion", "").asInstanceOf[String]
-    val publishType = if (status.equalsIgnoreCase("Live")) "Public" else "Unlisted"
-    val channel = objMetadata.getOrElse("channel", "").asInstanceOf[String]
-    val lastPublishedBy = objMetadata.getOrElse("lastPublishedBy", "System").asInstanceOf[String]
-    val event = s"""{"eid":"BE_JOB_REQUEST","ets":$epochTime,"mid":"LP.$epochTime.${UUID.randomUUID()}","actor":{"id":"question-republish","type":"System"},"context":{"pdata":{"ver":"1.0","id":"org.sunbird.platform"},"channel":"${channel}","env":"${config.jobEnv}"},"object":{"ver":"$pkgVersion","id":"$identifier"},"edata":{"publish_type":"$publishType","metadata":{"identifier":"$identifier", "mimeType":"$mimeType","objectType":"$objectType","lastPublishedBy":"${lastPublishedBy}","pkgVersion":$pkgVersion,"schemaVersion":"$schemaVersion"},"action":"republish","iteration":1}}"""
-    logger.info(s"QuestionMigrationFunction :: Live ${objectType} re-publish triggered for " + identifier)
-    logger.info(s"QuestionMigrationFunction :: Live ${objectType} re-publish event: " + event)
-    context.output(config.liveQuestionPublishEventOutTag, event)
+    context.output(config.liveQuestionPublishEventOutTag, getRepublishEvent(objMetadata, "question-republish", config.jobEnv))
     metrics.incCounter(config.questionRepublishEventCount)
   }
 }
