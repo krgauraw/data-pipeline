@@ -8,15 +8,11 @@ import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, MigrationMetadata, ObjectData}
-import java.util.UUID
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 import java.lang.reflect.Type
 import org.sunbird.job.quml.migrator.helpers.QuestionMigrator
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
-import java.util
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
 
 class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
@@ -87,23 +83,6 @@ class QuestionMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUtil,
       saveOnFailure(newObj)(neo4JUtil)
       metrics.incCounter(config.questionMigrationSkippedEventCount)
     }
-  }
-
-  def validateQuestion(identifier: String, obj: ObjectData)(implicit config: QumlMigratorConfig): List[String] = {
-    logger.info("Validating object with id: " + obj.identifier)
-    val messages = ListBuffer[String]()
-    if (obj.metadata.isEmpty) messages += s"""There is no metadata available for : $identifier"""
-    if (obj.metadata.get("mimeType").isEmpty) messages += s"""There is no mimeType defined for : $identifier"""
-    if (obj.metadata.get("primaryCategory").isEmpty) messages += s"""There is no primaryCategory defined for : $identifier"""
-    if (obj.extData.getOrElse(Map()).getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
-    val interactionTypes = obj.metadata.getOrElse("interactionTypes", new util.ArrayList[String]()).asInstanceOf[util.List[String]].asScala.toList
-    if (interactionTypes.nonEmpty) {
-      if (obj.extData.get.getOrElse("responseDeclaration", "").asInstanceOf[String].isEmpty) messages += s"""There is no responseDeclaration available for : $identifier"""
-      if (obj.extData.get.getOrElse("interactions", "").asInstanceOf[String].isEmpty) messages += s"""There is no interactions available for : $identifier"""
-    } else {
-      if (obj.extData.getOrElse(Map()).getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
-    }
-    messages.toList
   }
 
   def pushQuestionPublishEvent(objMetadata: Map[String, AnyRef], context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics, config: QumlMigratorConfig): Unit = {

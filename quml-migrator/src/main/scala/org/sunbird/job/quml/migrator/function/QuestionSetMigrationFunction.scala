@@ -13,7 +13,6 @@ import java.lang.reflect.Type
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, MigrationMetadata, ObjectData}
 import org.sunbird.job.quml.migrator.helpers.QuestionSetMigrator
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
-import java.util.UUID
 
 import scala.concurrent.ExecutionContext
 

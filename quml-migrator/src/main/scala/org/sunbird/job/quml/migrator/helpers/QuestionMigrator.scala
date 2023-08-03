@@ -11,6 +11,7 @@ import org.sunbird.job.util._
 
 import scala.collection.JavaConverters._
 import java.util
+import scala.collection.mutable.ListBuffer
 
 trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater with QumlMigrator {
 
@@ -151,6 +152,23 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
     }
     logger.info(s"getFormatedData ::: dType ::: ${dType} :::: formated value ::: " + value)
     return value
+  }
+
+  def validateQuestion(identifier: String, obj: ObjectData)(implicit config: QumlMigratorConfig): List[String] = {
+    logger.info("Validating object with id: " + obj.identifier)
+    val messages = ListBuffer[String]()
+    if (obj.metadata.isEmpty) messages += s"""There is no metadata available for : $identifier"""
+    if (obj.metadata.get("mimeType").isEmpty) messages += s"""There is no mimeType defined for : $identifier"""
+    if (obj.metadata.get("primaryCategory").isEmpty) messages += s"""There is no primaryCategory defined for : $identifier"""
+    if (obj.extData.getOrElse(Map()).getOrElse("body", "").asInstanceOf[String].isEmpty) messages += s"""There is no body available for : $identifier"""
+    val interactionTypes = obj.metadata.getOrElse("interactionTypes", new util.ArrayList[String]()).asInstanceOf[util.List[String]].asScala.toList
+    if (interactionTypes.nonEmpty) {
+      if (obj.extData.get.getOrElse("responseDeclaration", "").asInstanceOf[String].isEmpty) messages += s"""There is no responseDeclaration available for : $identifier"""
+      if (obj.extData.get.getOrElse("interactions", "").asInstanceOf[String].isEmpty) messages += s"""There is no interactions available for : $identifier"""
+    } else {
+      if (obj.extData.getOrElse(Map()).getOrElse("answer", "").asInstanceOf[String].isEmpty) messages += s"""There is no answer available for : $identifier"""
+    }
+    messages.toList
   }
 
 }
