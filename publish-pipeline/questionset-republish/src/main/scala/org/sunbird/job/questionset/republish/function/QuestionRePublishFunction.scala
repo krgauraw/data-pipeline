@@ -6,7 +6,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
-import org.sunbird.job.domain.`object`.DefinitionCache
+import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.publish.core.{DefinitionConfig, ExtDataConfig, ObjectData}
 import org.sunbird.job.publish.helpers.EcarPackageType
 import org.sunbird.job.questionset.republish.domain.PublishMetadata
@@ -14,10 +14,10 @@ import org.sunbird.job.questionset.republish.helpers.QuestionPublisher
 import org.sunbird.job.questionset.republish.task.QuestionSetRePublishConfig
 import org.sunbird.job.util.{CassandraUtil, CloudStorageUtil, HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
+
 import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.job.cache.{DataCache, RedisConnect}
 
@@ -34,7 +34,6 @@ class QuestionRePublishFunction(config: QuestionSetRePublishConfig, httpUtil: Ht
 
   private[this] val logger = LoggerFactory.getLogger(classOf[QuestionRePublishFunction])
   val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
-  private val readerConfig = ExtDataConfig(config.questionKeyspaceName, config.questionTableName)
 
   @transient var ec: ExecutionContext = _
   @transient var cache: DataCache = _
@@ -65,6 +64,8 @@ class QuestionRePublishFunction(config: QuestionSetRePublishConfig, httpUtil: Ht
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
     logger.info("Question publishing started for : " + data.identifier)
     metrics.incCounter(config.questionRePublishEventCount)
+    val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
+    val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
     val obj = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil,config)
     try {
       val messages: List[String] = validate(obj, obj.identifier, validateQuestion)
@@ -79,7 +80,7 @@ class QuestionRePublishFunction(config: QuestionSetRePublishConfig, httpUtil: Ht
         logger.info("Question publishing completed successfully for : " + data.identifier)
       } else {
         val upPkgVersion = obj.pkgVersion + 1
-        val migrVer = 0.2
+        val migrVer = 2.2
         val nodeId = obj.dbId
         val errorMessages = messages.mkString("; ")
         val query = s"""MATCH (n:domain{IL_UNIQUE_ID:"$nodeId"}) SET n.status="Failed", n.pkgVersion=$upPkgVersion, n.publishError="$errorMessages", n.migrationVersion=$migrVer, $auditPropsUpdateQuery;"""
@@ -90,7 +91,7 @@ class QuestionRePublishFunction(config: QuestionSetRePublishConfig, httpUtil: Ht
     } catch {
       case e: Exception => {
         val upPkgVersion = obj.pkgVersion + 1
-        val migrVer = 0.2
+        val migrVer = 2.2
         val nodeId = obj.dbId
         val errorMessages = e.getLocalizedMessage
         val query = s"""MATCH (n:domain{IL_UNIQUE_ID:"$nodeId"}) SET n.status="Failed", n.pkgVersion=$upPkgVersion, n.publishError="$errorMessages", n.migrationVersion=$migrVer, $auditPropsUpdateQuery;"""

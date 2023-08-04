@@ -4,7 +4,6 @@ import java.io.File
 
 import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, Insert, QueryBuilder, Select}
-import org.apache.commons.lang3
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.publish.config.PublishConfig
@@ -24,7 +23,6 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 	private val bundleLocation: String = "/tmp"
 	private val indexFileName = "index.json"
 	private val defaultManifestVersion = "1.2"
-	val extProps = List("body", "editorState", "answer", "solutions", "instructions", "hints", "media", "responseDeclaration", "interactions", "identifier")
 
 	override def getExternalData(identifier: String, pkgVersion: Double, mimeType: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil, config: PublishConfig): Option[ObjectExtData] = {
 		val row: Row = getQuestionSetData(identifier, readerConfig)
@@ -86,6 +84,7 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 
 	override def getExtDatas(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Option[Map[String, AnyRef]] = {
 		val rows = getQuestionsExtData(identifiers, readerConfig)(cassandraUtil).asScala
+		val extProps = readerConfig.propsMapping.keySet ++ Set("identifier")
 		if (rows.nonEmpty)
 			Option(rows.map(row => row.getString("identifier") -> extProps.map(prop => (prop -> row.getString(prop.toLowerCase()))).toMap).toMap)
 		else
@@ -99,7 +98,15 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 	def getQuestionsExtData(identifiers: List[String], readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
 		logger.info("QuestionSetPublisher ::: getQuestionsExtData ::: reader config ::: keyspace: " + readerConfig.keyspace + " ,  table : " + readerConfig.table)
 		val select = QueryBuilder.select()
-		extProps.foreach(prop => if (lang3.StringUtils.equals("body", prop) | lang3.StringUtils.equals("answer", prop)) select.fcall("blobAsText", QueryBuilder.column(prop.toLowerCase())).as(prop.toLowerCase()) else select.column(prop.toLowerCase()).as(prop.toLowerCase()))
+		val extProps: Set[String] = readerConfig.propsMapping.keySet ++ Set("identifier")
+		if (null != extProps && !extProps.isEmpty) {
+			extProps.foreach(prop => {
+				if ("blob".equalsIgnoreCase(readerConfig.propsMapping.getOrElse(prop, "").asInstanceOf[String]))
+					select.fcall("blobAsText", QueryBuilder.column(prop)).as(prop)
+				else
+					select.column(prop).as(prop)
+			})
+		}
 		val selectWhere: Select.Where = select.from(readerConfig.keyspace, readerConfig.table).where()
 		selectWhere.and(QueryBuilder.in("identifier", identifiers.asJava))
 		logger.info("QuestionSetPublisher ::: getQuestionsExtData ::: cassandra query ::: " + selectWhere.toString)
@@ -107,7 +114,7 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 	}
 
 	override def saveExternalData(obj: ObjectData, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil) = {
-		val identifier = obj.identifier.replace(".img", "")
+		val identifier = obj.identifier
 		val children: List[Map[String, AnyRef]] = obj.hierarchy.getOrElse(Map()).getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
 		val hierarchy: Map[String, AnyRef] = obj.metadata ++ Map("children" -> children)
 		val data = Map("hierarchy" -> hierarchy) ++ obj.extData.getOrElse(Map())
@@ -169,7 +176,7 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 
 	override def enrichObjectMetadata(obj: ObjectData)(implicit neo4JUtil: Neo4JUtil, cassandraUtil: CassandraUtil, readerConfig: ExtDataConfig, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, definitionCache: DefinitionCache, definitionConfig: DefinitionConfig): Option[ObjectData] = {
 		val newMetadata: Map[String, AnyRef] = obj.metadata ++ Map("pkgVersion" -> (obj.pkgVersion + 1).asInstanceOf[AnyRef], "lastPublishedOn" -> getTimeStamp,
-			"publishError" -> null, "variants" -> null, "downloadUrl" -> null, "compatibilityLevel" -> 5.asInstanceOf[AnyRef], "status" -> "Live", "migrationVersion"->1.1.asInstanceOf[AnyRef])
+			"publishError" -> null, "variants" -> null, "downloadUrl" -> null, "status" -> "Live", "migrationVersion"->3.1.asInstanceOf[AnyRef])
 		val children: List[Map[String, AnyRef]] = obj.hierarchy.getOrElse(Map()).getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
 		Some(new ObjectData(obj.identifier, newMetadata, obj.extData, hierarchy = Some(Map("identifier" -> obj.identifier, "children" -> enrichChildren(children)))))
 	}
@@ -184,14 +191,14 @@ trait QuestionSetPublisher extends LiveObjectReader with ObjectValidator with Ob
 		  && StringUtils.equalsIgnoreCase(element.getOrElse("visibility", "").asInstanceOf[String], "Parent")) {
 			val children: List[Map[String, AnyRef]] = element.getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
 			val enrichedChildren = enrichChildren(children)
-			element ++ Map("children" -> enrichedChildren, "status" -> "Live", "migrationVersion"->1.1.asInstanceOf[AnyRef])
+			element ++ Map("children" -> enrichedChildren, "status" -> "Live", "migrationVersion"->3.1.asInstanceOf[AnyRef])
 		} else if (StringUtils.equalsIgnoreCase(element.getOrElse("objectType", "").toString, "QuestionSet")
 		  && StringUtils.equalsIgnoreCase(element.getOrElse("visibility", "").toString, "Default")) {
 			val childHierarchy: Map[String, AnyRef] = getHierarchy(element.getOrElse("identifier", "").toString, 0.asInstanceOf[Double], readerConfig).getOrElse(Map())
 			childHierarchy ++ Map("index" -> element.getOrElse("index", 0).asInstanceOf[AnyRef], "depth" -> element.getOrElse("depth", 0).asInstanceOf[AnyRef], "parent" -> element.getOrElse("parent", ""))
 		} else if (StringUtils.equalsIgnoreCase(element.getOrElse("objectType", "").toString, "Question")) {
 			val newObject: ObjectData = getObject(element.getOrElse("identifier", "").toString, 0.asInstanceOf[Double], element.getOrElse("mimeType", "").toString, element.getOrElse("publish_type", "Public").toString, readerConfig)
-			if(newObject.metadata.getOrElse("migrationVersion", 0).asInstanceOf[AnyRef]!=1.1)
+			if(newObject.metadata.getOrElse("migrationVersion", 0).asInstanceOf[AnyRef]!=3.1)
 				throw new Exception(s"Children Having Identifier ${newObject.identifier} is not migrated.")
 			val definition: ObjectDefinition = definitionCache.getDefinition("Question", definitionConfig.supportedVersion.getOrElse("question", "1.0").asInstanceOf[String], definitionConfig.basePath)
 			val enMeta = newObject.metadata.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))

@@ -68,9 +68,9 @@ class QuestionSetRePublishFunction(config: QuestionSetRePublishConfig, httpUtil:
 	override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
 		logger.info("QuestionSet publishing started for : " + data.identifier)
 		metrics.incCounter(config.questionSetRePublishEventCount)
-		val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, config.schemaSupportVersionMap.getOrElse(data.objectType.toLowerCase(), "1.0").asInstanceOf[String], config.definitionBasePath)
+		val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
 		val readerConfig = ExtDataConfig(config.questionSetKeyspaceName, config.questionSetTableName, definition.getExternalPrimaryKey, definition.getExternalProps)
-		val qDef: ObjectDefinition = definitionCache.getDefinition("Question", config.schemaSupportVersionMap.getOrElse("question", "1.0").asInstanceOf[String], config.definitionBasePath)
+		val qDef: ObjectDefinition = definitionCache.getDefinition("Question", data.schemaVersion, config.definitionBasePath)
 		val qReaderConfig = ExtDataConfig(config.questionKeyspaceName, qDef.getExternalTable, qDef.getExternalPrimaryKey, qDef.getExternalProps)
 		val obj = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
 		logger.info("processElement ::: obj metadata before publish ::: " + ScalaJsonUtil.serialize(obj.metadata))
@@ -99,7 +99,7 @@ class QuestionSetRePublishFunction(config: QuestionSetRePublishConfig, httpUtil:
 				metrics.incCounter(config.questionSetRePublishSuccessEventCount)
 			} else {
 				val upPkgVersion = obj.pkgVersion + 1
-				val migrVer = 0.2
+				val migrVer = 2.2
 				val nodeId = obj.dbId
 				val errorMessages = messages.mkString("; ")
 				val query = s"""MATCH (n:domain{IL_UNIQUE_ID:"$nodeId"}) SET n.status="Failed", n.pkgVersion=$upPkgVersion, n.publishError="$errorMessages", n.migrationVersion=$migrVer, $auditPropsUpdateQuery;"""
@@ -110,7 +110,7 @@ class QuestionSetRePublishFunction(config: QuestionSetRePublishConfig, httpUtil:
 		} catch {
 			case e: Exception => {
 				val upPkgVersion = obj.pkgVersion + 1
-				val migrVer = 0.2
+				val migrVer = 2.2
 				val nodeId = obj.dbId
 				val query = s"""MATCH (n:domain{IL_UNIQUE_ID:"$nodeId"}) SET n.status="Failed", n.pkgVersion=$upPkgVersion, n.publishError="${e.getMessage}", n.migrationVersion=$migrVer, $auditPropsUpdateQuery;"""
 				neo4JUtil.executeQuery(query)

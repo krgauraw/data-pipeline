@@ -1,8 +1,7 @@
 package org.sunbird.job.questionset.republish.helpers
 
 import com.datastax.driver.core.Row
-import com.datastax.driver.core.querybuilder.{QueryBuilder, Select}
-import org.apache.commons.lang3
+import com.datastax.driver.core.querybuilder.{Clause, QueryBuilder, Select}
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.DefinitionCache
@@ -23,7 +22,6 @@ trait QuestionPublisher extends LiveObjectReader with ObjectValidator with Objec
   private val indexFileName = "index.json"
   private val defaultManifestVersion = "1.2"
   private[this] val logger = LoggerFactory.getLogger(classOf[QuestionPublisher])
-  val extProps = List("body", "editorState", "answer", "solutions", "instructions", "hints", "media", "responseDeclaration", "interactions")
 
   override def getHierarchy(identifier: String, pkgVersion: Double, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil, config: PublishConfig): Option[Map[String, AnyRef]] = None
 
@@ -31,7 +29,7 @@ trait QuestionPublisher extends LiveObjectReader with ObjectValidator with Objec
     val pkgVersion = obj.metadata.getOrElse("pkgVersion", 0.0.asInstanceOf[Number]).asInstanceOf[Number].intValue() + 1
     val publishType = obj.getString("publish_type", "Public")
     val status = if (StringUtils.equals("Private", publishType)) "Unlisted" else "Live"
-    val updatedMeta = obj.metadata ++ Map("pkgVersion" -> pkgVersion.asInstanceOf[AnyRef], "status" -> status, "migrationVersion"->1.1.asInstanceOf[AnyRef])
+    val updatedMeta = obj.metadata ++ Map("pkgVersion" -> pkgVersion.asInstanceOf[AnyRef], "status" -> status, "migrationVersion"->3.1.asInstanceOf[AnyRef])
     Some(new ObjectData(obj.identifier, updatedMeta, obj.extData, obj.hierarchy))
   }
 
@@ -52,15 +50,23 @@ trait QuestionPublisher extends LiveObjectReader with ObjectValidator with Objec
 
   override def getExternalData(identifier: String, pkgVersion: Double, mimeType: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil, config: PublishConfig): Option[ObjectExtData] = {
     val row: Row = getQuestionData(identifier, readerConfig)
-    val data = if (null != row) Option(extProps.map(prop => prop -> row.getString(prop.toLowerCase())).toMap.filter(p => StringUtils.isNotBlank(p._2))) else Option(Map[String, AnyRef]())
+    val data = if (null != row) Option(readerConfig.propsMapping.keySet.map(prop => prop -> row.getString(prop.toLowerCase())).toMap.filter(p => StringUtils.isNotBlank(p._2))) else Option(Map[String, AnyRef]())
     Option(ObjectExtData(data))
   }
 
   def getQuestionData(identifier: String, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Row = {
     logger.info("QuestionPublisher ::: getQuestionData ::: Reading Question External Data For : " + identifier)
     val select = QueryBuilder.select()
-    extProps.foreach(prop => if (lang3.StringUtils.equals("body", prop) | lang3.StringUtils.equals("answer", prop)) select.fcall("blobAsText", QueryBuilder.column(prop.toLowerCase())).as(prop.toLowerCase()) else select.column(prop.toLowerCase()).as(prop.toLowerCase()))
-    val selectWhere: Select.Where = select.from(readerConfig.keyspace, readerConfig.table).where().and(QueryBuilder.eq("identifier", identifier))
+    val extProps: Set[String] = readerConfig.propsMapping.keySet
+    if (null != extProps && !extProps.isEmpty) {
+      extProps.foreach(prop => {
+        if ("blob".equalsIgnoreCase(readerConfig.propsMapping.getOrElse(prop, "").asInstanceOf[String]))
+          select.fcall("blobAsText", QueryBuilder.column(prop)).as(prop)
+        else
+          select.column(prop).as(prop)
+      })
+    }
+    val selectWhere: Select.Where = select.from(readerConfig.keyspace, readerConfig.table).where().and(QueryBuilder.eq(readerConfig.primaryKey.head, identifier))
     logger.info("Cassandra Fetch Query :: " + selectWhere.toString)
     cassandraUtil.findOne(selectWhere.toString)
   }
@@ -75,18 +81,24 @@ trait QuestionPublisher extends LiveObjectReader with ObjectValidator with Objec
 
   override def saveExternalData(obj: ObjectData, readerConfig: ExtDataConfig)(implicit cassandraUtil: CassandraUtil): Unit = {
     val extData = obj.extData.getOrElse(Map())
-    val identifier = obj.identifier.replace(".img", "")
+    val identifier = obj.identifier
+    val columns = readerConfig.propsMapping.keySet
     val query = QueryBuilder.update(readerConfig.keyspace, readerConfig.table)
-      .where(QueryBuilder.eq("identifier", identifier))
-      .`with`(QueryBuilder.set("body", QueryBuilder.fcall("textAsBlob", extData.getOrElse("body", null))))
-      .and(QueryBuilder.set("answer", QueryBuilder.fcall("textAsBlob", extData.getOrElse("answer", null))))
-      .and(QueryBuilder.set("editorstate", extData.getOrElse("editorState", null)))
-      .and(QueryBuilder.set("solutions", extData.getOrElse("solutions", null)))
-      .and(QueryBuilder.set("instructions", extData.getOrElse("instructions", null)))
-      .and(QueryBuilder.set("media", extData.getOrElse("media", null)))
-      .and(QueryBuilder.set("hints", extData.getOrElse("hints", null)))
-      .and(QueryBuilder.set("responsedeclaration", extData.getOrElse("responseDeclaration", null)))
-      .and(QueryBuilder.set("interactions", extData.getOrElse("interactions", null)))
+    val clause: Clause = QueryBuilder.eq(readerConfig.primaryKey.head, identifier)
+    query.where.and(clause)
+    columns.foreach(col => {
+      readerConfig.propsMapping.getOrElse(col, "").asInstanceOf[String].toLowerCase match {
+        case "blob" => extData.getOrElse(col, "") match {
+          case value: String => query.`with`(QueryBuilder.set(col, QueryBuilder.fcall("textAsBlob", extData.getOrElse(col, ""))))
+          case _ => query.`with`(QueryBuilder.set(col, QueryBuilder.fcall("textAsBlob", JSONUtil.serialize(extData.getOrElse(col, "")))))
+        }
+        case "string" => extData.getOrElse(col, "") match {
+          case value: String => query.`with`(QueryBuilder.set(col, extData.getOrElse(col, null)))
+          case _ => query.`with`(QueryBuilder.set(col, JSONUtil.serialize(extData.getOrElse(col, ""))))
+        }
+        case _ => query.`with`(QueryBuilder.set(col, extData.getOrElse(col, null)))
+      }
+    })
 
     logger.info(s"Updating Question in Cassandra For $identifier : ${query.toString}")
     val result = cassandraUtil.upsert(query.toString)
