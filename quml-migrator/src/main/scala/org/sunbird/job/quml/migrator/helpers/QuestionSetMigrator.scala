@@ -4,8 +4,9 @@ import com.datastax.driver.core.Row
 import com.datastax.driver.core.querybuilder.{Clause, Insert, QueryBuilder}
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
-import org.sunbird.job.domain.`object`.{ObjectDefinition}
+import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
+import org.sunbird.job.quml.migrator.exceptions.QumlMigrationException
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util.{CassandraUtil, Neo4JUtil, ScalaJsonUtil}
 
@@ -17,6 +18,8 @@ import scala.collection.mutable.ListBuffer
 trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpdater with QumlMigrator {
 
 	private[this] val logger = LoggerFactory.getLogger(classOf[QuestionSetMigrator])
+
+	val propsToRemove = List("outcomeDeclaration", "bloomsLevel", "maxScore","version")
 
 	def validateQuestionSet(identifier: String, obj: ObjectData)(implicit neo4JUtil: Neo4JUtil): List[String] = {
 		val messages = ListBuffer[String]()
@@ -98,10 +101,9 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			val migrGrpahData: util.Map[String, AnyRef] = migrateGrpahData(data.identifier, metaMap)
 			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, extMeta)
 			val outcomeDeclaration: util.Map[String, AnyRef] = migrGrpahData.getOrDefault("outcomeDeclaration", Map[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
-			migrGrpahData.remove("outcomeDeclaration")
+			propsToRemove.foreach(prop => migrGrpahData.remove(prop))
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
 			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hierarchyData)
-
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
 			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
 			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)
@@ -109,8 +111,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Completed Data Transformation For : " + data.identifier)
 			Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData.asScala.toMap), Some(migrHierarchy.asScala.toMap)))
 		} catch {
-			case e: Exception => {
+			case e: java.lang.Exception => {
 				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Failed Data Transformation For : " + data.identifier)
+				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: exception message :: "+ e.getMessage)
+				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: exception message :: "+ e.getLocalizedMessage)
 				val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
 				Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
 			}
@@ -127,9 +131,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				data
 			} else data
 		} catch {
-			case e: Exception => {
+			case e: java.lang.Exception => {
 				e.printStackTrace()
-				throw new Exception(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier}")
+				logger.info(s"QuestionSetMigrator  ::  migrateGrpahData ::: Error Occurred While Graph Data Transformation For ${identifier} | Error: "+ e.getMessage)
+				throw new QumlMigrationException(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
 			}
 		}
 	}
@@ -141,9 +146,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				data
 			} else data
 		} catch {
-			case e: Exception => {
+			case e: java.lang.Exception => {
 				e.printStackTrace()
-				throw new Exception(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier}")
+				logger.info(s"QuestionSetMigrator  ::  migrateExtData ::: Error Occurred While External Data Transformation For ${identifier} | Error: "+ e.getMessage)
+				throw new QumlMigrationException(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier} | Error : "+e.getMessage)
 			}
 		}
 	}
@@ -168,9 +174,10 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				data
 			} else data
 		} catch {
-			case e: Exception => {
+			case e: java.lang.Exception => {
+				logger.info(s"QuestionSetMigrator  ::  migrateHierarchy ::: Error Occurred While Hierarchy Data Transformation For ${identifier} | Error: "+ e.getMessage)
 				e.printStackTrace()
-				throw new Exception(s"Error Occurred While Converting Hierarchy Data To Quml 1.1 Format for ${identifier}")
+				throw new QumlMigrationException(s"Error Occurred While Converting Hierarchy Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
 			}
 		}
 	}
@@ -198,10 +205,8 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 						val chStr = ScalaJsonUtil.serialize(chData)
 						val chMap: util.Map[String, AnyRef] = mapper.readValue(chStr, classOf[util.Map[String, AnyRef]])
 						ch.putAll(chMap)
-					} else throw new Exception(s"Please migrate children having identifier ${childrenId}")
+					} else throw new QumlMigrationException(s"Please migrate children having identifier ${childrenId}")
 				}
-
-
 			})
 		}
 	}
