@@ -101,7 +101,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			val migrGrpahData: util.Map[String, AnyRef] = migrateGrpahData(data.identifier, metaMap)
 			val migrExtData: util.Map[String, AnyRef] = migrateExtData(data.identifier, extMeta)
 			val outcomeDeclaration: util.Map[String, AnyRef] = migrGrpahData.getOrDefault("outcomeDeclaration", Map[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
-			propsToRemove.foreach(prop => migrGrpahData.remove(prop))
+			propsToRemove.foreach(prop => migrGrpahData.put(prop, null))
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
 			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hierarchyData)
 			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
