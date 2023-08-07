@@ -141,7 +141,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
     }
   }
 
-  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
+  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition, neo4JUtil: Neo4JUtil): Option[ObjectData] = None
 
   def getFormatedData(data: String, dType: String): AnyRef = {
     logger.info("getFormatedData ::: data ::: " + data)

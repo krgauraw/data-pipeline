@@ -6,6 +6,7 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
+import org.sunbird.job.util.Neo4JUtil
 
 import java.util
 
@@ -247,6 +248,6 @@ class TestQumlMigrator extends QumlMigrator {
 
   override def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
 
-  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
+  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition, neo4JUtil: Neo4JUtil): Option[ObjectData] = None
 
 }

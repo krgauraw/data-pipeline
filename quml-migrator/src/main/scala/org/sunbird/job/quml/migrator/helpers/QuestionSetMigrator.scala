@@ -83,7 +83,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		result
 	}
 
-	override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = {
+	override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition, neo4JUtil: Neo4JUtil): Option[ObjectData] = {
 		logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Stating Data Transformation For : " + data.identifier)
 		try {
 			val metaMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
@@ -148,7 +148,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		}
 	}
 
-	def migrateHierarchy(identifier: String, data: util.Map[String, AnyRef]): util.Map[String, AnyRef] = {
+	def migrateHierarchy(identifier: String, data: util.Map[String, AnyRef])(implicit neo4JUtil: Neo4JUtil): util.Map[String, AnyRef] = {
 		try {
 			if (!data.isEmpty) {
 				logger.info(s"QuestionSetMigrator ::: migrateHierarchy ::: Hierarchy migration stated for ${identifier}")
@@ -175,18 +175,33 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 		}
 	}
 
-	def migrateChildren(children: util.List[util.Map[String, AnyRef]]): Unit = {
+	def migrateChildren(children: util.List[util.Map[String, AnyRef]])(implicit neo4JUtil: Neo4JUtil): Unit = {
 		if (!children.isEmpty) {
 			children.foreach(ch => {
-				if (ch.containsKey("version")) ch.remove("version")
-				processBloomsLevel(ch)
-				processBooleanProps(ch)
 				if (StringUtils.equalsIgnoreCase("application/vnd.sunbird.questionset", ch.getOrDefault("mimeType", "").asInstanceOf[String])) {
+					if (ch.containsKey("version")) ch.remove("version")
+					processBloomsLevel(ch)
+					processBooleanProps(ch)
 					processTimeLimits(ch)
 					processInstructions(ch)
+					ch.put("schemaVersion", "1.1")
+					ch.put("qumlVersion", 1.1.asInstanceOf[AnyRef])
+					ch.put("migrationVersion", 3.0.asInstanceOf[AnyRef])
 					val nestedChildren = ch.getOrDefault("children", new util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[util.List[java.util.Map[String, AnyRef]]]
 					migrateChildren(nestedChildren)
+				} else {
+					val childrenId = ch.get("identifier").asInstanceOf[String].replace(".img","")
+					val chData = getMetadata(childrenId)(neo4JUtil)
+					val schemaVersion = chData.getOrElse("schemaVersion", "1.0").asInstanceOf[String]
+					val migrVer:Double = chData.getOrElse("migrationVersion", 1.0.asInstanceOf[AnyRef]).asInstanceOf[Double]
+					if(StringUtils.equalsIgnoreCase("1.1", schemaVersion) && List(3.0,3.1).contains(migrVer)) {
+						val chStr = ScalaJsonUtil.serialize(chData)
+						val chMap: util.Map[String, AnyRef] = mapper.readValue(chStr, classOf[util.Map[String, AnyRef]])
+						ch.putAll(chMap)
+					} else throw new Exception(s"Please migrate children having identifier ${childrenId}")
 				}
+
+
 			})
 		}
 	}
