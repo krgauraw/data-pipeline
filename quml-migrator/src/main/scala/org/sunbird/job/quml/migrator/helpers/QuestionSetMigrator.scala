@@ -205,6 +205,8 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 						val chStr = ScalaJsonUtil.serialize(chData)
 						val chMap: util.Map[String, AnyRef] = mapper.readValue(chStr, classOf[util.Map[String, AnyRef]])
 						ch.putAll(chMap)
+						ch.remove("bloomsLevel")
+						ch.remove("version")
 					} else throw new QumlMigrationException(s"Please migrate children having identifier ${childrenId}")
 				}
 			})
