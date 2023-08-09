@@ -13,7 +13,7 @@ class FileUtilsSpec extends FlatSpec with Matchers {
   }
 
   "downloadFile " should " download the media source file starting with http or https " in {
-    val fileUrl: String = "https://preprodall.blob.core.windows.net/ntp-content-preprod/content/do_21273718766395392014320/artifact/book-image_1554832478631.jpg"
+    val fileUrl: String = "https://sunbirddevbbpublic.blob.core.windows.net/sunbird-content-staging/content/assets/do_2137327580080128001217/gateway-of-india.jpg"
     val downloadedFile: File = FileUtils.downloadFile(fileUrl, "/tmp/contentBundle")
     assert(downloadedFile.exists())
   }
