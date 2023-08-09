@@ -1,4 +1,4 @@
-package org.sunbird.job.quml.migrator.task
+package org.sunbird.job.quml.migrator.helpers
 
 import akka.dispatch.ExecutionContexts
 import com.typesafe.config.{Config, ConfigFactory}
@@ -10,7 +10,7 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
-import org.sunbird.job.quml.migrator.helpers.QuestionMigrator
+import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util.{CassandraUtil, HttpUtil, Neo4JUtil}
 
 import java.util
@@ -76,10 +76,9 @@ class QuestionMigratorSpec extends FlatSpec with BeforeAndAfterAll with Matchers
     val result: ObjectData = new TestQuestionMigrator().migrateQuestion(data).getOrElse(new ObjectData("do_234", Map()))
     result.identifier should be("do_123")
     result.metadata.contains("complexityLevel") should be(true)
-    result.metadata.contains("bloomsLevel") should be(false)
+    result.metadata.contains("bloomsLevel") should be(true)
+    result.metadata.get("bloomsLevel").get should be(null)
   }
-
-
 
 }
 

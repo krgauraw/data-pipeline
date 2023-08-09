@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.{ExtDataConfig, ObjectData, ObjectExtData}
+import org.sunbird.job.quml.migrator.exceptions.QumlMigrationException
 import org.sunbird.job.quml.migrator.task.QumlMigratorConfig
 import org.sunbird.job.util._
 
@@ -89,15 +90,18 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       val migratedExtData = migrateExtData(data.identifier, extMeta)
       migratedExtData.remove("primaryCategory")
       val migrGrpahData: util.Map[String, AnyRef] = migrateGrpahData(data.identifier, jMap)
-      if(migrGrpahData.containsKey("bloomsLevel")) migrGrpahData.remove("bloomsLevel")
+      migrGrpahData.put("bloomsLevel", null)
+      migrGrpahData.put("version", null)
       val updatedMeta: Map[String, AnyRef] = migrGrpahData.asScala.toMap ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
       logger.info("QuestionMigrator ::: migrateQuestion ::: migrated metadata :::: "+migrGrpahData)
       logger.info("QuestionMigrator ::: migrateQuestion ::: migrated ext data :::: "+migratedExtData)
       logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
       Some(new ObjectData(data.identifier, updatedMeta, Some(migratedExtData.asScala.toMap), data.hierarchy))
     } catch {
-      case e: Exception => {
+      case e: java.lang.Exception => {
         logger.info("QuestionMigrator ::: migrateQuestion ::: Failed Data Transformation For : " + data.identifier)
+        logger.info("QuestionMigrator ::: migrateQuestion ::: exception message :: "+ e.getMessage)
+        logger.info("QuestionMigrator ::: migrateQuestion ::: exception message :: "+ e.getLocalizedMessage)
         e.printStackTrace()
         val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
         Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
@@ -114,8 +118,9 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       } else data
     } catch {
       case e: Exception => {
+        logger.info(s"QuestionMigrator ::: migrateGrpahData ::: Error occurred while converting graph data for ${identifier} | Error: " +e.getMessage)
         e.printStackTrace()
-        throw new Exception(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier}")
+        throw new QumlMigrationException(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
       }
     }
   }
@@ -134,14 +139,15 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
         data
       } else data
     } catch {
-      case e: Exception => {
+      case e: java.lang.Exception => {
         e.printStackTrace()
-        throw new Exception(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier}")
+        logger.info(s"QuestionMigrator ::: migrateExtData ::: Error occurred while converting external data for ${identifier} | Error: " + e.getMessage )
+        throw new QumlMigrationException(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
       }
     }
   }
 
-  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData] = None
+  override def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition, neo4JUtil: Neo4JUtil): Option[ObjectData] = None
 
   def getFormatedData(data: String, dType: String): AnyRef = {
     logger.info("getFormatedData ::: data ::: " + data)

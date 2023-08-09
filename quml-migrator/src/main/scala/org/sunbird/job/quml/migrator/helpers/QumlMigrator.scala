@@ -5,7 +5,7 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
-import org.sunbird.job.util.JSONUtil
+import org.sunbird.job.util.{JSONUtil, Neo4JUtil}
 
 import java.util
 import java.util.UUID
@@ -20,7 +20,7 @@ trait QumlMigrator {
 
   def migrateQuestion(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
 
-  def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition): Option[ObjectData]
+  def migrateQuestionSet(data: ObjectData)(implicit definition: ObjectDefinition, neo4JUtil: Neo4JUtil): Option[ObjectData]
 
   def processMaxScore(data: util.Map[String, AnyRef]): Unit = {
     if (data.containsKey("maxScore")) {
