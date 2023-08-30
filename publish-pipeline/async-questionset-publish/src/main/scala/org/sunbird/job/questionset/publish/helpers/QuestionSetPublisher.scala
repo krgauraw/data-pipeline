@@ -168,7 +168,14 @@ trait QuestionSetPublisher extends ObjectReader with ObjectValidator with Object
 	}
 
 	override def enrichObjectMetadata(obj: ObjectData)(implicit neo4JUtil: Neo4JUtil, cassandraUtil: CassandraUtil, readerConfig: ExtDataConfig, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, definitionCache: DefinitionCache, definitionConfig: DefinitionConfig): Option[ObjectData] = {
-		val newMetadata: Map[String, AnyRef] = obj.metadata ++ Map("pkgVersion" -> (obj.pkgVersion + 1).asInstanceOf[AnyRef], "lastPublishedOn" -> getTimeStamp,
+		val meta = obj.metadata
+		val objectType = meta.getOrElse("objectType", "QuestionSet").asInstanceOf[String]
+		val scVer: String = meta.getOrElse("schemaVersion", "0.0").asInstanceOf[String]
+		val schemaVersion: String = if (!StringUtils.equalsIgnoreCase("0.0", scVer)) scVer else definitionConfig.supportedVersion.getOrElse(objectType.toLowerCase(), "1.0").asInstanceOf[String]
+		val definition: ObjectDefinition = definitionCache.getDefinition(objectType, schemaVersion, definitionConfig.basePath)
+		val enMeta = meta.filter(x => null != x._2).map(element => (element._1, convertJsonProperties(element, definition.getJsonProps())))
+		val updatedMeta = if (definition.getOneOfProps().nonEmpty) enMeta.map(entry => (entry._1, convertOneOfProps(entry, definition.getOneOfProps()))) else enMeta
+		val newMetadata: Map[String, AnyRef] = updatedMeta ++ Map("pkgVersion" -> (obj.pkgVersion + 1).asInstanceOf[AnyRef], "lastPublishedOn" -> getTimeStamp,
 			"publishError" -> null, "variants" -> null, "downloadUrl" -> null, "status" -> "Live")
 		val children: List[Map[String, AnyRef]] = obj.hierarchy.getOrElse(Map()).getOrElse("children", List()).asInstanceOf[List[Map[String, AnyRef]]]
 		Some(new ObjectData(obj.identifier, newMetadata, obj.extData, hierarchy = Some(Map("identifier" -> obj.identifier, "children" -> enrichChildren(children)))))
