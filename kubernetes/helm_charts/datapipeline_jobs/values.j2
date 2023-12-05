@@ -3,8 +3,8 @@ imagepullsecrets: {{ imagepullsecrets }}
 dockerhub: {{ dockerhub }}
 repository: {{flink_repository|default('data-pipeline')}}
 image_tag: {{ image_tag }}
-azure_account: {{ cloud_public_storage_accountname }}
-azure_secret: {{ cloud_public_storage_secret }}
+azure_account: {{ azure_account }}
+azure_secret: {{ azure_secret }}
 csp: {{cloud_service_provider}}
 s3_access_key: {{ cloud_public_storage_accountname }}
 s3_secret_key: {{cloud_public_storage_secret}}
