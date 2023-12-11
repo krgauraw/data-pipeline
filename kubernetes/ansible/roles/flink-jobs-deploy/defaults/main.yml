@@ -103,10 +103,10 @@ inquiry_quml_migrator_group: "{{ env_name }}-quml-migrator-group"
 ### user-pii-data-updater config
 user_pii_updater_kafka_topic_name: "{{ env_name }}.delete.user"
 user_pii_updater_group: "{{ env_name }}-user-pii-updater-group"
-user_pii_target_object_types: {
+user_pii_target_object_types: '{
   "Question": ["1.0", "1.1"],
   "QuestionSet": ["1.0", "1.1"]
-}
+}'
 user_pii_replacement_value: "Deleted User"
 user_org_service_base_url: "http://{{private_ingressgateway_ip}}/userorg"
 email_notification_subject: "User Account Deletion Notification"
