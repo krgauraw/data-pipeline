@@ -1,7 +1,5 @@
 package org.sunbird.job.domain.`object`
 
-import org.apache.commons.lang3.StringUtils
-
 class ObjectDefinition(val objectType: String, val version: String, val schema: Map[String, AnyRef], val config: Map[String, AnyRef]) {
 
   val externalProperties = if (config.isEmpty) List() else {
@@ -79,5 +77,11 @@ class ObjectDefinition(val objectType: String, val version: String, val schema: 
       val properties = schema.getOrElse("properties", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
       properties.filter(prop => propNames.contains(prop._1)).map(prop => (prop._1, prop._2.asInstanceOf[Map[String, AnyRef]].getOrElse("type", "").asInstanceOf[String]))
     }
+  }
+
+  def getPiiFields(piiType: String): Map[String, AnyRef] = {
+    val piiFields = config.getOrElse("PII_Fields", Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
+    val piiConfig = piiFields.getOrElse(piiType, Map[String, AnyRef]()).asInstanceOf[Map[String, AnyRef]]
+    piiConfig
   }
 }

@@ -21,6 +21,7 @@
 		<module>jobs-core</module>
         <module>publish-pipeline</module>
         <module>quml-migrator</module>
+        <module>user-pii-data-updater</module>
     </modules>
 
     <properties>
