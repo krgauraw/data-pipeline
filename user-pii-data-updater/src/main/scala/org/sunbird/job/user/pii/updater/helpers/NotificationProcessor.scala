@@ -20,6 +20,7 @@ trait NotificationProcessor {
           val url = config.userorg_service_baseUrl + "/userorg/v2/notification"
           val body = getRequestBody(data, userId, userName, orgAdminIds)
           val header: Map[String, String] = Map("Content-Type" -> "application/json", "Accept" -> "application/json")
+          logger.info(s"url : ${url} | request body : ${body} ")
           val httpResponse: HTTPResponse = httpUtil.post(url, body, header)
           if (httpResponse.status == 200) {
             logger.info(s"NotificationProcessor ::: sendNotification ::: Notification sent successfully to admin user ids : ${orgAdminIds} for user id: ${userId}")
