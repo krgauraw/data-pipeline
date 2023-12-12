@@ -17,7 +17,7 @@ trait NotificationProcessor {
         case true => logger.info(s"NotificationProcessor ::: sendNotification ::: Org Admin Ids Not Available. So Notification Skipped for userId : ${userId}")
         case false => {
           logger.info(s"NotificationProcessor ::: sendNotification ::: Notification will be triggered to admin user ids ::: ${orgAdminIds}")
-          val url = config.userorg_service_baseUrl + "/userorg/v2/notification"
+          val url = config.userorg_service_baseUrl + "/v2/notification"
           val body = getRequestBody(data, userId, userName, orgAdminIds)
           val header: Map[String, String] = Map("Content-Type" -> "application/json", "Accept" -> "application/json")
           logger.info(s"url : ${url} | request body : ${body} ")
