@@ -37,6 +37,7 @@ trait NotificationProcessor {
 
   def getRequestBody(data: Map[String, String], userId: String, userName: String, orgAdminIds: List[String])(implicit config: UserPiiUpdaterConfig): String = {
     val body = getHtmlBody(data, userId, userName)
+    val adminIdStr: String = orgAdminIds.map(s => s""""$s"""").mkString(", ")
     val req =
       s"""{
          |    "request": {
@@ -44,7 +45,7 @@ trait NotificationProcessor {
          |        "subject": "${config.notification_email_subject}",
          |        "body": "${body}",
          |        "regards": "${config.notification_email_regards}",
-         |        "recipientUserIds": ${orgAdminIds.asJava}
+         |        "recipientUserIds": [${adminIdStr}]
          |    }
          |}
          |""".stripMargin
