@@ -18,7 +18,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def userId: String = readOrDefault[String]("edata.userId", "")
 
-  def userName: String = readOrDefault[String]("edata.userName", "")
+  def userName: String = readOrDefault[String]("edata.userName", "user")
 
   def objType: String = readOrDefault[String]("object.type", "")
 
