@@ -53,6 +53,6 @@ trait NotificationProcessor {
 
   def getHtmlBody(data: Map[String, String], userId: String, userName: String): String = {
     //TODO: Return full html body contains all text and data
-    s"Deleted User Id: ${userId}. Affected Identifiers: ${data.keySet}"
+    s"Deleted User Id: ${userId}. Affected Identifiers: ${data.keySet.asJava}"
   }
 }
