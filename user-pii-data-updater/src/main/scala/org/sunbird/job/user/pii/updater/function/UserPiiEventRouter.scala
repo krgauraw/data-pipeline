@@ -32,7 +32,7 @@ class UserPiiEventRouter(config: UserPiiUpdaterConfig) extends BaseProcessFuncti
       event.action match {
         case "delete-user" => {
           logger.info("UserPiiEventRouter :: Sending Event For User Pii Data Cleanup having userId: " + event.userId)
-          context.output(config.userPiiEventOutTag, UserPiiEvent(event.eventId, event.objType, event.userId, event.orgAdminUserId))
+          context.output(config.userPiiEventOutTag, UserPiiEvent(event.eventId, event.objType, event.userId, event.userName, event.orgAdminUserId))
         }
         case _ => {
           metrics.incCounter(config.skippedEventCount)

@@ -96,7 +96,7 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
     if(!idMap.isEmpty && failedIdMap.isEmpty) {
       logger.info(s"UserPiiUpdateFunction ::: All PII data processed successfully for user id : ${userEvent.userId}. Total Identifiers affected : ${idMap.keySet()}")
       metrics.incCounter(config.userPiiUpdateSuccessEventCount)
-      sendNotification(idMap.toMap, userEvent.userId, "", userEvent.orgAdminUserId)(config, httpUtil)
+      sendNotification(idMap.toMap, userEvent.userId, userEvent.userName, userEvent.orgAdminUserId)(config, httpUtil)
     } else if(idMap.isEmpty && failedIdMap.isEmpty) {
       logger.info(s"UserPiiUpdateFunction ::: Event Skipped for user id : ${userEvent.userId} because no object found for given user.")
       metrics.incCounter(config.userPiiUpdateSkippedEventCount)
