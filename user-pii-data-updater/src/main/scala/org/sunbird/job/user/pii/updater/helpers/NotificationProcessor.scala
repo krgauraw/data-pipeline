@@ -53,7 +53,75 @@ trait NotificationProcessor {
   }
 
   def getHtmlBody(data: Map[String, String], userId: String, userName: String): String = {
-    //TODO: Return full html body contains all text and data
-    s"Deleted User Id: ${userId}. Affected Identifiers: ${data.keySet.asJava}"
+    val htmlBody = s"""<html lang="en">
+                      |   <head>
+                      |      <meta charset="UTF-8">
+                      |      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                      |      <style>
+                      |         body {
+                      |         font-family: Arial, sans-serif;
+                      |         margin: 0;
+                      |         padding: 0;
+                      |         display: flex;
+                      |         flex-direction: column;
+                      |         align-items: center;
+                      |         justify-content: center;
+                      |         background-color: #f4f4f4;
+                      |         }
+                      |         .notification {
+                      |         max-width: 600px;
+                      |         background-color: #fff;
+                      |         padding: 20px;
+                      |         border-radius: 8px;
+                      |         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                      |         margin-bottom: 20px;
+                      |         }
+                      |         .table-container {
+                      |         width: 100%;
+                      |         overflow: auto;
+                      |         }
+                      |         table {
+                      |         width: 100%;
+                      |         border-collapse: collapse;
+                      |         margin-top: 20px;
+                      |         }
+                      |         th,
+                      |         td {
+                      |         border: 1px solid #ddd;
+                      |         padding: 8px;
+                      |         text-align: left;
+                      |         }
+                      |         th {
+                      |         background-color: #f2f2f2;
+                      |         }
+                      |      </style>
+                      |      <title>Table Styling Example</title>
+                      |   </head>
+                      |   <body>
+                      |      <div class="notification">
+                      |         <p class="notification-text">This notification is to inform you about the recent deletion of a user account having user id:  ${userId}.</p>
+                      |         <p class="user-text">Ownership of the assets previously held by ${userName} on the platform will need to be reassigned.</p>
+                      |         <p class="necessary-text">Please take the necessary steps to ensure a smooth transition of ownership for any critical assets.</p>
+                      |         <div class="table-container">
+                      |            TABLE_DATA
+                      |         </div>
+                      |      </div>
+                      |   </body>
+                      |</html>""".stripMargin
+    val distinctValues = data.values.toSet
+    val htmlTable = new java.lang.StringBuilder()
+    htmlTable.append("<table><thead><tr><th>Identifier</th><th>Status</th></tr></thead><tbody>\n")
+    distinctValues.foreach { value =>
+      val entriesForValue = data.filter { case (_, status) => status == value }
+      entriesForValue.foreach { case (key, value) =>
+        htmlTable.append("<tr>")
+        htmlTable.append("<td>").append(key).append("</td>")
+        htmlTable.append("<td>").append(value.asInstanceOf[String]).append("</td>")
+        htmlTable.append("</tr>\n")
+      }
+    }
+    htmlTable.append("</tbody></table>")
+    val updatedBody = htmlBody.replace("TABLE_DATA", htmlTable.toString)
+    updatedBody
   }
 }
