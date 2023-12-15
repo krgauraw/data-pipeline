@@ -8,9 +8,9 @@ import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.user.pii.updater.domain.{ObjectData, UserPiiEvent}
-import org.sunbird.job.user.pii.updater.helpers.{Neo4jDataProcessor, NotificationProcessor}
+import org.sunbird.job.user.pii.updater.helpers.{Neo4jDataProcessor, UserPiiUpdater}
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
-import org.sunbird.job.util.{HttpUtil, JSONUtil, Neo4JUtil}
+import org.sunbird.job.util.{HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.util
@@ -21,10 +21,9 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
                             @transient var neo4JUtil: Neo4JUtil = null,
                             @transient var definitionCache: DefinitionCache = null)
                            (implicit val stringTypeInfo: TypeInformation[String])
-  extends BaseProcessFunction[UserPiiEvent, String](config) with Neo4jDataProcessor with NotificationProcessor{
+  extends BaseProcessFunction[UserPiiEvent, String](config) with Neo4jDataProcessor with UserPiiUpdater {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[UserPiiUpdateFunction])
-  //val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
 
   @transient var ec: ExecutionContext = _
 
@@ -46,8 +45,8 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
 
   override def processElement(userEvent: UserPiiEvent, context: ProcessFunction[UserPiiEvent, String]#Context, metrics: Metrics): Unit = {
     logger.info("UserPiiUpdateFunction event: " + userEvent)
-    val idMap = new util.HashMap[String, String]();
-    val failedIdMap = new util.HashMap[String, String]();
+    val idMap = new util.HashMap[String, String]()
+    val failedIdMap = new util.HashMap[String, String]()
     val targetObjectTypes: Map[String, AnyRef] = config.target_object_types.toMap
     targetObjectTypes.foreach(entry => {
       val schemaVersions: List[String] = entry._2.asInstanceOf[java.util.List[String]].toList
@@ -63,13 +62,7 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
               logger.info(s"UserPiiUpdateFunction ::: processing node with metadata ::: ${node.metadata}")
               val meta: Map[String, AnyRef] = targetKeys.map(key => {
                 if (StringUtils.contains(key, ".")) {
-                  val nestedKeys: List[String] = (key.split("\\.")).toList
-                  val nodeProp = node.getString(nestedKeys(0), "{}")
-                  val propValue: util.Map[String, AnyRef] = if(StringUtils.isNotBlank(nodeProp)) JSONUtil.deserialize[java.util.Map[String, AnyRef]](nodeProp) else new util.HashMap[String, AnyRef]()
-                  val length = nestedKeys.size - 1
-                  val counter = 1
-                  setPropValue(propValue, nestedKeys, counter, length, config.user_pii_replacement_value)
-                  Map(nestedKeys(0) -> node.getString(nestedKeys(0), JSONUtil.serialize(propValue)))
+                  processNestedProp(key, node)(config)
                 } else {
                   Map(key -> config.user_pii_replacement_value)
                 }
@@ -80,11 +73,11 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
               if (StringUtils.isNotBlank(updatedId)) {
                 logger.info(s"Node Updated Successfully for identifier: ${node.id}")
                 if(StringUtils.equalsIgnoreCase("Default", node.metadata.getOrElse("visibility", "").asInstanceOf[String]))
-                  idMap.put(node.id, node.status)
+                  idMap.put(node.id.replace(".img",""), node.status)
               } else {
                 logger.info(s"Node Update Failed for identifier: ${node.id}")
                 if(StringUtils.equalsIgnoreCase("Default", node.metadata.getOrElse("visibility", "").asInstanceOf[String]))
-                  failedIdMap.put(node.id, node.status)
+                  failedIdMap.put(node.id.replace(".img",""), node.status)
               }
             })
           } else {
@@ -93,28 +86,6 @@ class UserPiiUpdateFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
         })
       })
     })
-    if(!idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdateFunction ::: All PII data processed successfully for user id : ${userEvent.userId}. Total Identifiers affected : ${idMap.keySet()}")
-      metrics.incCounter(config.userPiiUpdateSuccessEventCount)
-      sendNotification(idMap.toMap, userEvent.userId, userEvent.userName, userEvent.orgAdminUserId)(config, httpUtil)
-    } else if(idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdateFunction ::: Event Skipped for user id : ${userEvent.userId} because no object found for given user.")
-      metrics.incCounter(config.userPiiUpdateSkippedEventCount)
-    } else if(!idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdateFunction ::: All PII data processing completed partially for user id : ${userEvent.userId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
-      metrics.incCounter(config.userPiiUpdatePartialSuccessEventCount)
-    } else if(idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdateFunction ::: All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
-      metrics.incCounter(config.userPiiUpdateFailedEventCount)
-    }
-
-    def setPropValue(data: util.Map[String, AnyRef], keys: List[String], counter:Int, length: Int, propValue: String): Unit = {
-      if(counter<length) {
-        val tt = data.getOrElse(keys(counter), new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
-        setPropValue(tt, keys, counter+1, length, propValue)
-      } else {
-        data.put(keys(counter), propValue)
-      }
-    }
+    processResult(userEvent, idMap, failedIdMap)(config, httpUtil, metrics)
   }
 }
