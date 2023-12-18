@@ -30,7 +30,6 @@ trait UserPiiUpdater extends NotificationProcessor {
     } else if (idMap.isEmpty && !failedIdMap.isEmpty) {
       logger.info(s"UserPiiUpdater ::: processResult :: All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
       throw new ServerException("ERR_PROCESSING_FAILED", s"All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
-      //metrics.incCounter(config.userPiiUpdateFailedEventCount)
     }
   }
 
@@ -38,15 +37,18 @@ trait UserPiiUpdater extends NotificationProcessor {
     val nestedKeys: List[String] = (key.split("\\.")).toList
     val nodeProp = node.getString(nestedKeys(0), "{}")
     val propValue: util.Map[String, AnyRef] = if (StringUtils.isNotBlank(nodeProp)) JSONUtil.deserialize[java.util.Map[String, AnyRef]](nodeProp) else new util.HashMap[String, AnyRef]()
+    println("propValue ::: "+propValue)
     val length = nestedKeys.size - 1
     val counter = 1
     setPropValue(propValue, nestedKeys, counter, length, config.user_pii_replacement_value)
     Map(nestedKeys(0) -> node.getString(nestedKeys(0), JSONUtil.serialize(propValue)))
   }
   def setPropValue(data: util.Map[String, AnyRef], keys: List[String], counter: Int, length: Int, propValue: String): Unit = {
+    println("data ::: "+data)
     if (counter < length) {
-      val tt = data.getOrElse(keys(counter), new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
-      setPropValue(tt, keys, counter + 1, length, propValue)
+      val nMap: util.Map[String, AnyRef] = data.getOrDefault(keys(counter), new util.HashMap[String, AnyRef]()).asInstanceOf[util.Map[String, AnyRef]]
+      println("nMap ::: "+nMap)
+      setPropValue(nMap, keys, counter + 1, length, propValue)
     } else {
       data.put(keys(counter), propValue)
     }

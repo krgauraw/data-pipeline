@@ -6,6 +6,7 @@ import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
+import org.sunbird.job.exception.ServerException
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
 import org.sunbird.job.util.{HTTPResponse, HttpUtil, Neo4JUtil}
 
@@ -25,10 +26,23 @@ class NotificationProcessorSpec extends FlatSpec with BeforeAndAfterAll with Mat
     super.afterAll()
   }
 
-  "processNestedProp" should "return a map with updated value" in {
+  "sendNotification" should "send notification successfully" in {
     when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIResponse())
     new TestNotificationProcessor().sendNotification(Map("do_123"->"Draft","do_234"->"Live"), "abc123", "Test User", List("def12dhfbd","fvjsvfr232hhkbd"))
     assert(true)
+  }
+
+  "sendNotification with empty org admin ids" should "skip notification" in {
+    when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIResponse())
+    new TestNotificationProcessor().sendNotification(Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List())
+    assert(true)
+  }
+
+  "sendNotification" should "throw an exception if api call fails" in {
+    when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIFailureResponse())
+    assertThrows[ServerException] {
+      new TestNotificationProcessor().sendNotification(Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List("def12dhfbd", "fvjsvfr232hhkbd"))
+    }
   }
 
   def getNotificationAPIResponse(): HTTPResponse = {
@@ -50,6 +64,12 @@ class NotificationProcessorSpec extends FlatSpec with BeforeAndAfterAll with Mat
         |  }
         |}""".stripMargin
     HTTPResponse(200, body)
+  }
+
+  def getNotificationAPIFailureResponse(): HTTPResponse = {
+    val body =
+      """{}""".stripMargin
+    HTTPResponse(500, body)
   }
 
 }
