@@ -8,7 +8,7 @@ import org.sunbird.job.domain.`object`.ObjectDefinition
 class ObjectDefinitionSpec extends FlatSpec with BeforeAndAfterAll with Matchers with MockitoSugar {
 
   val schema = Map[String, AnyRef]("properties" -> Map[String, AnyRef]("instructions" -> Map("type"-> "object"), "outcomeDeclaration"-> Map("type"->"object")))
-  val config = Map[String, AnyRef]("oneOfProps"-> List("body","answer"), "external" -> Map("tableName" -> "questionset_hierarchy", "properties" -> Map("hierarchy"->Map("type" -> "string"), "instructions"->Map("type" -> "string"), "outcomeDeclaration"->Map("type" -> "string")), "primaryKey" -> List("identifier")))
+  val config = Map[String, AnyRef]("oneOfProps"-> List("body","answer"), "PII_Fields"-> Map("user"-> Map("createdBy"->List("creator")), "org"->Map()), "external" -> Map("tableName" -> "questionset_hierarchy", "properties" -> Map("hierarchy"->Map("type" -> "string"), "instructions"->Map("type" -> "string"), "outcomeDeclaration"->Map("type" -> "string")), "primaryKey" -> List("identifier")))
 
   val qSchema = Map[String, AnyRef]("properties" -> Map[String, AnyRef]("instructions" -> Map("type" -> "object"), "outcomeDeclaration" -> Map("type" -> "object")))
 
@@ -64,5 +64,13 @@ class ObjectDefinitionSpec extends FlatSpec with BeforeAndAfterAll with Matchers
     assert(output.nonEmpty)
     assert(output.size==1)
     assert(output.contains("identifier"))
+  }
+
+  "getPiiFields" should "return pii configuration for given types" in {
+    val objDef = new ObjectDefinition("Question", "1.0", qSchema, qConfig)
+    val output: Map[String, AnyRef] = objDef.getPiiFields("user")
+    assert(output.nonEmpty)
+    assert(output.size == 1)
+    assert(output.contains("createdBy"))
   }
 }

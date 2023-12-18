@@ -49,6 +49,6 @@ class UserPiiUpdaterConfig (override val config: Config) extends BaseJobConfig(c
   val admin_email_notification_enable = if(config.hasPath("admin_email_notification_enable")) config.getBoolean("admin_email_notification_enable") else true
   val userorg_service_baseUrl = config.getString("userorg_service_base_url")
   val notification_email_subject = if(config.hasPath("notification.email.subject")) config.getString("notification.email.subject") else "User Account Deletion Notification"
-  val notification_email_regards = if(config.hasPath("notification.email.regards")) config.getString("notification.email.subject") else "Team"
+  val notification_email_regards = if(config.hasPath("notification.email.regards")) config.getString("notification.email.regards") else "Team"
 
 }

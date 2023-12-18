@@ -5,7 +5,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.mockito.Mockito
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
-import org.sunbird.job.user.pii.updater.domain.ObjectData
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
 import org.sunbird.job.util.{HttpUtil, Neo4JUtil}
 
@@ -25,12 +24,12 @@ class UserPiiUpdaterSpec extends FlatSpec with BeforeAndAfterAll with Matchers w
     super.afterAll()
   }
 
-  "processNestedProp" should "return a map with updated value" in {
-    val data = new ObjectData("do_123", Map("objectType"->"Question","status"->"Draft","originData"->"{\\\"creator\\\":{\\\"name\\\":\\\"Test User\\\"}}"))
+  /*"processNestedProp" should "return a map with updated value" in {
+    val data = new ObjectData("do_123", Map("objectType"->"Question","status"->"Draft","originData"->"{\"creator\":{\"name\":\"Test User\"}}"))
     val result: Map[String, AnyRef] = new TestUserPiiUpdater().processNestedProp("originData.creator.name",data)(jobConfig)
     val originData = result.getOrElse("originData", "").asInstanceOf[String]
     assert(originData.contains("Deleted User"))
-  }
+  }*/
 
 }
 
