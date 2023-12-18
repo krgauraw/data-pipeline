@@ -12,7 +12,7 @@ class ObjectDefinitionSpec extends FlatSpec with BeforeAndAfterAll with Matchers
 
   val qSchema = Map[String, AnyRef]("properties" -> Map[String, AnyRef]("instructions" -> Map("type" -> "object"), "outcomeDeclaration" -> Map("type" -> "object")))
 
-  val qConfig = Map[String, AnyRef]("oneOfProps" -> List("body", "answer"), "external" -> Map("tableName" -> "question_data", "properties" -> Map("body" -> Map("type" -> "string"), "instructions" -> Map("type" -> "string"), "outcomeDeclaration" -> Map("type" -> "string")), "primaryKey" -> List("identifier")))
+  val qConfig = Map[String, AnyRef]("oneOfProps" -> List("body", "answer"), "PII_Fields"-> Map("user"-> Map("createdBy"->List("creator")), "org"->Map()), "external" -> Map("tableName" -> "question_data", "properties" -> Map("body" -> Map("type" -> "string"), "instructions" -> Map("type" -> "string"), "outcomeDeclaration" -> Map("type" -> "string")), "primaryKey" -> List("identifier")))
 
   "getPropsType" should "return property and its type in map format " in {
     val objDef = new ObjectDefinition("QuestionSet","1.0", schema, config)
