@@ -258,3 +258,33 @@ quml-migrator:
     parallelism.default: 1
     jobmanager.execution.failover-strategy: region
     taskmanager.memory.network.fraction: 0.1
+
+user-pii-data-updater:
+  user-pii-data-updater: |+
+    include file("/data/flink/conf/base-config.conf")
+    kafka {
+      input.topic = "{{ user_pii_updater_kafka_topic_name }}"
+      groupId = "{{ user_pii_updater_group }}"
+    }
+    task {
+      consumer.parallelism = 1
+      parallelism = 1
+      router.parallelism = 1
+    }
+    target_object_types={{ user_pii_target_object_types }}
+    user_pii_replacement_value="{{ user_pii_replacement_value }}"
+    admin_email_notification_enable={{ enable_admin_email_notification | default('true') }}
+    userorg_service_base_url="{{ user_org_service_base_url }}"
+    notification {
+      email {
+        subject: "{{ email_notification_subject }}",
+        regards: "{{ email_notification_regards }}"
+      }
+    }
+  flink-conf: |+
+    jobmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].jobmanager_memory }}
+    taskmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].taskmanager_memory }}
+    taskmanager.numberOfTaskSlots: {{ flink_job_names['user-pii-data-updater'].taskslots }}
+    parallelism.default: 1
+    jobmanager.execution.failover-strategy: region
+    taskmanager.memory.network.fraction: 0.1
