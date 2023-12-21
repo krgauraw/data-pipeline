@@ -26,6 +26,8 @@ class QumlMigratorConfig(override val config: Config) extends BaseJobConfig(conf
 	// Parallelism
 	override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
 	val eventRouterParallelism: Int = config.getInt("task.router.parallelism")
+	val questionMigratorParallelism: Int = if (config.hasPath("task.question_migration.parallelism")) config.getInt("task.question_migration.parallelism") else 1
+	val questionSetMigratorParallelism: Int = if (config.hasPath("task.questionset_migration.parallelism")) config.getInt("task.questionset_migration.parallelism") else 1
 
 	// Metric List
 	val totalEventsCount = "total-events-count"

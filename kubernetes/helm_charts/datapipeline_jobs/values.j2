@@ -238,9 +238,11 @@ quml-migrator:
       groupId = "{{ inquiry_quml_migrator_group }}"
     }
     task {
-      consumer.parallelism = 1
-      parallelism = 1
-      router.parallelism = 1
+      consumer.parallelism = {{ quml_migrator_consumer_parallelism }}
+      parallelism = {{ quml_migrator_task_parallelism }}
+      router.parallelism = {{ quml_migrator_router_parallelism }}
+      question_migration.parallelism = {{ question_migration_parallelism }},
+      questionset_migration.parallelism = {{ questionset_migration_parallelism }}
     }
     question {
       keyspace = "{{ question_keyspace_name }}"
