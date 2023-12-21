@@ -48,7 +48,9 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
   }
 
   override def processElement(data: MigrationMetadata, context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics): Unit = {
+    val startTime = System.currentTimeMillis()
     logger.info("QuestionSet Migration started for : " + data.identifier)
+    logger.info("Start Time of QuestionSet Migration: " + startTime)
     metrics.incCounter(config.questionSetMigrationEventCount)
     val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
     val readerConfig = ExtDataConfig(config.questionSetKeyspaceName, config.questionSetTableName, definition.getExternalPrimaryKey, definition.getExternalProps)
@@ -85,6 +87,10 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
       saveOnFailure(newObj)(neo4JUtil)
       metrics.incCounter(config.questionSetMigrationSkippedEventCount)
     }
+    val endTime = System.currentTimeMillis()
+    val processingTime = endTime - startTime
+    logger.info("End Time of QuestionSet Migration: " + endTime)
+    logger.info(s"Total Processing Time For QuestionSet Migration (Millisecond): ${processingTime}")
   }
 
   def pushQuestionPublishEvent(objMetadata: Map[String, AnyRef], context: ProcessFunction[MigrationMetadata, String]#Context, metrics: Metrics, config: QumlMigratorConfig): Unit = {

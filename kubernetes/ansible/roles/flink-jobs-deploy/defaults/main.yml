@@ -99,6 +99,11 @@ inquiry_assessment_republish_group: "{{ env_name }}-questionset-republish-group"
 ### quml-migrator config
 inquiry_quml_migrator_kafka_topic_name: "{{ env_name }}.quml.migration.job.request"
 inquiry_quml_migrator_group: "{{ env_name }}-quml-migrator-group"
+quml_migrator_consumer_parallelism: 1
+quml_migrator_task_parallelism: 1
+quml_migrator_router_parallelism: 1
+question_migration_parallelism: 1
+questionset_migration_parallelism: 1
 
 ### user-pii-data-updater config
 user_pii_updater_kafka_topic_name: "{{ env_name }}.delete.user"
