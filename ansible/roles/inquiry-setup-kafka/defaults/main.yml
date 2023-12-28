@@ -1,0 +1,37 @@
+env: dev
+
+processing_inquiry_kafka_topics:
+  - name: assessment.publish.request
+    num_of_partitions: 1
+    replication_factor: 1
+  - name: assessment.postpublish.request
+    num_of_partitions: 1
+    replication_factor: 1
+  - name: object.import.request
+    num_of_partitions: 1
+    replication_factor: 1
+  - name: assessment.republish.request
+    num_of_partitions: 1
+    replication_factor: 1
+  - name: quml.migration.job.request
+    num_of_partitions: 1
+    replication_factor: 1   
+
+processing_inquiry_kafka_overriden_topics:
+  - name: assessment.publish.request
+    retention_time: 172800000
+    replication_factor: 1
+  - name: assessment.postpublish.request
+    retention_time: 172800000
+    replication_factor: 1
+  - name: object.import.request
+    retention_time: 172800000
+    replication_factor: 1
+  - name: assessment.republish.request
+    retention_time: 172800000
+    replication_factor: 1
+  - name: quml.migration.job.request
+    retention_time: 172800000
+    replication_factor: 1
+
+
