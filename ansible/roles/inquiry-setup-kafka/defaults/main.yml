@@ -15,6 +15,9 @@ processing_inquiry_kafka_topics:
     replication_factor: 1
   - name: quml.migration.job.request
     num_of_partitions: 1
+    replication_factor: 1
+  - name: delete.user
+    num_of_partitions: 1
     replication_factor: 1   
 
 processing_inquiry_kafka_overriden_topics:
@@ -31,6 +34,9 @@ processing_inquiry_kafka_overriden_topics:
     retention_time: 172800000
     replication_factor: 1
   - name: quml.migration.job.request
+    retention_time: 172800000
+    replication_factor: 1
+  - name: delete.user
     retention_time: 172800000
     replication_factor: 1
 
