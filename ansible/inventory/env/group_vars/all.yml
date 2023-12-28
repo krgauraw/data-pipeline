@@ -22,4 +22,7 @@ inquiry_cassandra_connection_ip: "{{ groups['core-cassandra'][0] }}"
 neo4j_route_path: "bolt://{{ groups['learning-neo4j-node1'][0] }}:7687"
 search_es_host: "{{ groups['composite-search-cluster']|join(':9200,')}}:9200"
 
+### kafka and zookeeper ip vars and being used in kafka topic creation role.
+processing_zookeeper_ip: "{{ groups['processing-cluster-zookeepers'][0] }}"
+
 
