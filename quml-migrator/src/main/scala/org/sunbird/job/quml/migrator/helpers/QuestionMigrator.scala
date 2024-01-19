@@ -114,6 +114,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       if (!data.isEmpty) {
         processBloomsLevel(data)
         processBooleanProps(data)
+        data.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
         data
       } else data
     } catch {
