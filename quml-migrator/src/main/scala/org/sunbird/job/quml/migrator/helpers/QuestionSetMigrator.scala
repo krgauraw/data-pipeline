@@ -128,6 +128,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				processBloomsLevel(data)
 				processBooleanProps(data)
 				processTimeLimits(data)
+				data.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
 				data
 			} else data
 		} catch {
@@ -164,6 +165,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 				processBloomsLevel(data)
 				processBooleanProps(data)
 				processTimeLimits(data)
+				data.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
 				val status = data.getOrDefault("status","").asInstanceOf[String]
 				val liveStatus = List("Live", "Unlisted")
 				if(StringUtils.isNotBlank(status) && liveStatus.contains(status))
@@ -191,6 +193,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 					processBooleanProps(ch)
 					processTimeLimits(ch)
 					processInstructions(ch)
+					ch.put("compatibilityLevel", 6.asInstanceOf[AnyRef])
 					ch.put("schemaVersion", "1.1")
 					ch.put("qumlVersion", 1.1.asInstanceOf[AnyRef])
 					ch.put("migrationVersion", 3.0.asInstanceOf[AnyRef])
@@ -207,6 +210,7 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 						ch.putAll(chMap)
 						ch.remove("bloomsLevel")
 						ch.remove("version")
+						ch.put("compatibilityLevel", 5.asInstanceOf[AnyRef])
 					} else throw new QumlMigrationException(s"Please migrate children having identifier ${childrenId}")
 				}
 			})
