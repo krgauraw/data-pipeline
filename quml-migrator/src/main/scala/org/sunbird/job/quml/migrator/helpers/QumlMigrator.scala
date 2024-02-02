@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.domain.`object`.ObjectDefinition
 import org.sunbird.job.quml.migrator.domain.ObjectData
+import org.sunbird.job.quml.migrator.exceptions.QumlMigrationException
 import org.sunbird.job.util.{JSONUtil, Neo4JUtil}
 
 import java.util
@@ -188,6 +189,7 @@ trait QumlMigrator {
           val solutionStr = """<video data-asset-variable="media_identifier" width="400" controls="" poster="thumbnail_url"><source type="video/mp4" src="media_source_url"><source type="video/webm" src="media_source_url"></video>""".replace("media_identifier", value).replace("thumbnail_url", thumbnail).replace("media_source_url", src)
           solutionStr
         }
+        case _ => throw new QumlMigrationException(s"Solution of type ${data.getOrDefault("type", "").asInstanceOf[String]} not supported.")
       }
     } else ""
   }

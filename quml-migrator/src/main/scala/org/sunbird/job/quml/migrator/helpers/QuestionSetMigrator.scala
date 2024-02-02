@@ -104,17 +104,12 @@ trait QuestionSetMigrator extends MigrationObjectReader with MigrationObjectUpda
 			propsToRemove.foreach(prop => migrGrpahData.put(prop, null))
 			migrExtData.put("outcomeDeclaration", outcomeDeclaration)
 			val migrHierarchy: util.Map[String, AnyRef] = migrateHierarchy(data.identifier, hierarchyData)
-			logger.info("migrateQuestionSet :: migrated graph data ::: " + migrGrpahData)
-			logger.info("migrateQuestionSet :: migrated ext data ::: " + migrExtData)
-			logger.info("migrateQuestionSet :: migrated hierarchy ::: " + migrHierarchy)
 			val updatedMeta: Map[String, AnyRef] = migrGrpahData.asScala.toMap ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
-			logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Completed Data Transformation For : " + data.identifier)
+			logger.info(s"QuestionSetMigrator ::: migrateQuestionSet ::: Completed Data Transformation Successfully For : ${data.identifier } | migrated graph data ::: ${updatedMeta} | migrated ext data ::: ${migrExtData} | migrated hierarchy ::: ${migrHierarchy}")
 			Some(new ObjectData(data.identifier, updatedMeta, Some(migrExtData.asScala.toMap), Some(migrHierarchy.asScala.toMap)))
 		} catch {
 			case e: java.lang.Exception => {
-				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: Failed Data Transformation For : " + data.identifier)
-				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: exception message :: "+ e.getMessage)
-				logger.info("QuestionSetMigrator ::: migrateQuestionSet ::: exception message :: "+ e.getLocalizedMessage)
+				logger.info(s"QuestionSetMigrator ::: migrateQuestionSet ::: Failed Data Transformation For : ${data.identifier} | exception message :: ${e.getMessage} | localized exception message: ${e.getLocalizedMessage}")
 				val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
 				Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
 			}

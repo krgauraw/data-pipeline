@@ -59,6 +59,7 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
     if (messages.isEmpty) {
       val migratedObj: ObjectData = migrateQuestionSet(objData)(definition, neo4JUtil).getOrElse(objData)
       val status = migratedObj.metadata.getOrElse("status", "").asInstanceOf[String]
+      val migrationError = migratedObj.metadata.getOrElse("migrationError", "").asInstanceOf[String]
       val qumlVersion: Double = migratedObj.metadata.getOrElse("qumlVersion", 1.0).asInstanceOf[Double]
       val migrationVersion: Double = migratedObj.metadata.getOrElse("migrationVersion", 0.0).asInstanceOf[Double]
       if (migrationVersion == 3.0 && qumlVersion == 1.1) {
@@ -72,9 +73,8 @@ class QuestionSetMigrationFunction(config: QumlMigratorConfig, httpUtil: HttpUti
           logger.info("QuestionSet Re Publish Event Triggered Successfully For : " + data.identifier)
         }
       } else {
-        logger.info("QuestionSet Migration Failed For : " + data.identifier + " | Errors : " + messages.mkString("; "))
-        val errorMessages = messages.mkString("; ")
-        val metadata = objData.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError" -> errorMessages)
+        logger.info("QuestionSet Migration Failed For : " + data.identifier + " | Errors : " + migrationError)
+        val metadata = objData.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError" -> migrationError)
         val newObj = new ObjectData(objData.identifier, metadata, objData.extData, objData.hierarchy)
         saveOnFailure(newObj)(neo4JUtil)
         metrics.incCounter(config.questionSetMigrationFailedEventCount)
