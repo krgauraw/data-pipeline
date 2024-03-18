@@ -2,7 +2,7 @@ package org.sunbird.spec
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.{FlatSpec, Matchers}
-import org.sunbird.job.util.{HTTPResponse, HttpUtil, JSONUtil, ScalaJsonUtil}
+import org.sunbird.job.util.{HTTPResponse, HttpUtil, JSONUtil}
 
 import java.io.File
 
@@ -56,7 +56,7 @@ class HTTPUtilSpec extends FlatSpec with Matchers {
   }
 
   "downloadFile" should "download file with lower case name" in {
-    val fileUrl = "https://sunbirddevbbpublic.blob.core.windows.net/sunbird-content-staging/content/assets/do_2137327580080128001217/gateway-of-india.jpg"
+    val fileUrl = "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/do_113252367947718656186/artifact/do_113252367947718656186_1617720706250_gitkraken.png"
     val httpUtil = new HttpUtil
     val downloadPath = "/tmp/content" + File.separator + "_temp_" + System.currentTimeMillis
     val downloadedFile = httpUtil.downloadFile(fileUrl, downloadPath)
