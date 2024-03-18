@@ -282,7 +282,8 @@ user-pii-data-updater:
         subject: "{{ email_notification_subject }}",
         regards: "{{ email_notification_regards }}"
       }
-    }
+    },
+    ownership_transfer_roles={{ ownership_transfer_user_roles }}
   flink-conf: |+
     jobmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].jobmanager_memory }}
     taskmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].taskmanager_memory }}

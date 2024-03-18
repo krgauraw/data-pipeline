@@ -31,6 +31,8 @@ class UserPiiUpdaterConfigSpec extends FlatSpec with BeforeAndAfterAll with Matc
     assert(StringUtils.equalsIgnoreCase("http://localhost:9000/userorg", jobConfig.userorg_service_baseUrl))
     assert(StringUtils.equalsIgnoreCase("User Account Deletion Notification", jobConfig.notification_email_subject))
     assert(StringUtils.equalsIgnoreCase("Team", jobConfig.notification_email_regards))
+    val roles: java.util.List[String] = jobConfig.ownershipTransferValidRoles
+    assert(roles.contains("CONTENT_CREATOR"))
     assert(jobConfig.admin_email_notification_enable)
   }
 
