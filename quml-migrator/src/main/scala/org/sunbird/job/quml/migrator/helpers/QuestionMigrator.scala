@@ -93,17 +93,18 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       migrGrpahData.put("bloomsLevel", null)
       migrGrpahData.put("version", null)
       val updatedMeta: Map[String, AnyRef] = migrGrpahData.asScala.toMap ++ Map[String, AnyRef]("qumlVersion" -> 1.1.asInstanceOf[AnyRef], "schemaVersion" -> "1.1", "migrationVersion" -> 3.0.asInstanceOf[AnyRef])
-      logger.info("QuestionMigrator ::: migrateQuestion ::: migrated metadata :::: "+migrGrpahData)
-      logger.info("QuestionMigrator ::: migrateQuestion ::: migrated ext data :::: "+migratedExtData)
-      logger.info("QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation For : " + data.identifier)
+      logger.info(s"QuestionMigrator ::: migrateQuestion ::: Completed Data Transformation Successfully For : ${data.identifier}  | migrated metadata :::: ${updatedMeta} | migrated ext data :::: ${migratedExtData}")
       Some(new ObjectData(data.identifier, updatedMeta, Some(migratedExtData.asScala.toMap), data.hierarchy))
     } catch {
+      case ex: QumlMigrationException => {
+        logger.info(s"QuestionMigrator ::: migrateQuestion ::: QumlMigrationException ::: Failed Data Transformation For : ${data.identifier} | exception message :: ${ex.getMessage}")
+        val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError" -> ex.getMessage)
+        Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
+      }
       case e: java.lang.Exception => {
-        logger.info("QuestionMigrator ::: migrateQuestion ::: Failed Data Transformation For : " + data.identifier)
-        logger.info("QuestionMigrator ::: migrateQuestion ::: exception message :: "+ e.getMessage)
-        logger.info("QuestionMigrator ::: migrateQuestion ::: exception message :: "+ e.getLocalizedMessage)
+        logger.info(s"QuestionMigrator ::: migrateQuestion ::: Exception ::: Failed Data Transformation For : ${data.identifier} | exception message :: ${e.getMessage} | localized exception message :: ${e.getLocalizedMessage}")
         e.printStackTrace()
-        val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->e.getMessage)
+        val updatedMeta: Map[String, AnyRef] = data.metadata ++ Map[String, AnyRef]("migrationVersion" -> 2.1.asInstanceOf[AnyRef], "migrationError"->s"Exception Occurred While Data Migration For : ${data.identifier}")
         Some(new ObjectData(data.identifier, updatedMeta, data.extData, data.hierarchy))
       }
     }
@@ -121,7 +122,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       case e: Exception => {
         logger.info(s"QuestionMigrator ::: migrateGrpahData ::: Error occurred while converting graph data for ${identifier} | Error: " +e.getMessage)
         e.printStackTrace()
-        throw new QumlMigrationException(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
+        throw new QumlMigrationException(s"Error Occurred While Converting Graph Data To Quml 1.1 Format for ${identifier}")
       }
     }
   }
@@ -143,7 +144,7 @@ trait QuestionMigrator extends MigrationObjectReader with MigrationObjectUpdater
       case e: java.lang.Exception => {
         e.printStackTrace()
         logger.info(s"QuestionMigrator ::: migrateExtData ::: Error occurred while converting external data for ${identifier} | Error: " + e.getMessage )
-        throw new QumlMigrationException(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier} | Error: "+e.getMessage)
+        throw new QumlMigrationException(s"Error Occurred While Converting External Data To Quml 1.1 Format for ${identifier}")
       }
     }
   }

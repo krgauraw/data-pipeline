@@ -33,11 +33,11 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 	def schemaVersion: String = readOrDefault[String]("edata.metadata.schemaVersion", "1.0")
 
 	def qumlVersion: Double = {
-		val qumlVersion = readOrDefault[Int]("edata.metadata.pkgVersion", 1)
+		val qumlVersion = readOrDefault[Int]("edata.metadata.qumlVersion", 1)
 		qumlVersion.toDouble
 	}
 
 	def validEvent(): Boolean = {
-		(StringUtils.equals("quml-migration", action) && StringUtils.isNotBlank(objectId)) && (objectTypes.contains(objectType) && mimeTypes.contains(mimeType) && qumlVersion != 1.1)
+		(StringUtils.equals("quml-migration", action) && StringUtils.isNotBlank(objectId)) && (objectTypes.contains(objectType) && mimeTypes.contains(mimeType) && !StringUtils.equalsIgnoreCase("1.1", schemaVersion))
 	}
 }
