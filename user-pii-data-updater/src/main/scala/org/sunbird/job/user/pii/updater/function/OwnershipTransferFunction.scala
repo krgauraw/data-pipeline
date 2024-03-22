@@ -59,8 +59,9 @@ class OwnershipTransferFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil
           val definition: ObjectDefinition = definitionCache.getDefinition(objectType, schemaVersion, config.definitionBasePath)
           val userPiiFields = definition.getPiiFields(event.objectType.toLowerCase())
           val nodeId = node.getOrElse("identifier", assetId).asInstanceOf[String]
+          val toUserName = event.toUserProfile.getOrElse("firstName", "").asInstanceOf[String] + " " + event.toUserProfile.getOrElse("lastName", "").asInstanceOf[String]
           userPiiFields.foreach(pii => {
-            val meta: Map[String, AnyRef] = Map(pii._1 -> event.toUserId)
+            val meta: Map[String, AnyRef] = Map(pii._1 -> event.toUserId, pii._2.asInstanceOf[List[String]].head -> toUserName)
             val updatedId = updateObject(nodeId, meta)(neo4JUtil)
             if (StringUtils.isNotBlank(updatedId)) {
               logger.info(s"Node Updated Successfully for identifier: ${nodeId}")
@@ -82,6 +83,7 @@ class OwnershipTransferFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil
           schemaVersions.foreach(ver => {
             val definition: ObjectDefinition = definitionCache.getDefinition(entry._1, ver, config.definitionBasePath)
             val userPiiFields = definition.getPiiFields(event.objectType.toLowerCase())
+            val toUserName = event.toUserProfile.getOrElse("firstName", "").asInstanceOf[String] + " " + event.toUserProfile.getOrElse("lastName", "").asInstanceOf[String]
             userPiiFields.foreach(pii => {
               logger.info(s"OwnershipTransferFunction :: Processing objectType : ${entry._1} , schemaVersion : ${ver} for ownership transfer between :: from userId: ${event.fromUserId} , to userId: ${event.toUserId}")
               val nodes: List[ObjectData] = searchObjects(entry._1, pii._1, ver, event.fromUserId)(neo4JUtil)
@@ -89,7 +91,7 @@ class OwnershipTransferFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil
                 logger.info(s"OwnershipTransferFunction ::: ${nodes.size} nodes found for ownership transfer.")
                 nodes.map(node => {
                   logger.info(s"OwnershipTransferFunction ::: processing node with metadata ::: ${node.metadata}")
-                  val meta: Map[String, AnyRef] = Map(pii._1 -> event.toUserId)
+                  val meta: Map[String, AnyRef] = Map(pii._1 -> event.toUserId, pii._2.asInstanceOf[List[String]].head -> toUserName)
                   logger.info(s"OwnershipTransferFunction ::: metadata going to be updated for ${node.id} ::: ${meta}")
                   val updatedId = updateObject(node.id, meta)(neo4JUtil)
                   logger.info("updatedId ::: " + updatedId)
