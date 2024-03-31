@@ -36,7 +36,7 @@ class ThumbnailGeneratorSpec extends FlatSpec with BeforeAndAfterAll with Matche
     resultMetadata.getOrElse("posterImage", "").asInstanceOf[String].isEmpty should be(false)
     resultMetadata.getOrElse("appIcon", "").asInstanceOf[String].isEmpty should be(false)
     resultMetadata.getOrElse("posterImage", "").asInstanceOf[String] shouldBe "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/assets/do_11400964389868339217/indiagate.jpeg"
-    resultMetadata.getOrElse("appIcon", "").asInstanceOf[String] shouldBe "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/assets/do_11400964389868339217/indiagate.thumb.jpeg"
+    resultMetadata.getOrElse("appIcon", "").asInstanceOf[String] shouldBe "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/questionset/do_123/artifact/indiagate.thumb.jpeg"
   }
 
   "Object Thumbnail Generator generateThumbnail with google drive link" should "add the thumbnail to ObjectData" in {
@@ -51,7 +51,7 @@ class ThumbnailGeneratorSpec extends FlatSpec with BeforeAndAfterAll with Matche
     resultMetadata.getOrElse("posterImage", "").asInstanceOf[String].isEmpty should be(false)
     resultMetadata.getOrElse("appIcon", "").asInstanceOf[String].isEmpty should be(false)
     resultMetadata.getOrElse("posterImage", "").asInstanceOf[String] shouldBe "https://drive.google.com/uc?export=download&id=1-dFzAeSNmx1ZRn77CEntyQA-VcBE0PKg"
-    resultMetadata.getOrElse("appIcon", "").asInstanceOf[String] shouldBe "https://sunbirddev.blob.core.windows.net/sunbird-content-staging/questionset/do_123/artifact/book.thumb.jpg"
+    resultMetadata.getOrElse("appIcon", "").asInstanceOf[String] shouldBe "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/questionset/do_123/artifact/book.thumb.jpg"
   }
 
 }
