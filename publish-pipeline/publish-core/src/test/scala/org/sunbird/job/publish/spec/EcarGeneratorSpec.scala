@@ -35,7 +35,7 @@ class EcarGeneratorSpec extends FlatSpec with BeforeAndAfterAll with Matchers {
   "Object Ecar Generator generateEcar" should "return a Map containing Packaging Type and its url after uploading it to cloud" in {
 
     val hierarchy = Map("identifier" -> "do_123", "children" -> List(Map("identifier" -> "do_234", "name" -> "Children-1", "objectType" -> "Question"), Map("identifier" -> "do_345", "name" -> "Children-2", "objectType" -> "Question")))
-    val metadata = Map("identifier" -> "do_123", "appIcon" -> "https://dev.sunbirded.org/assets/images/sunbird_logo.png", "identifier" -> "do_123", "objectType" -> "QuestionSet", "name" -> "Test QuestionSet", "status" -> "Live")
+    val metadata = Map("identifier" -> "do_123", "appIcon" -> "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/assets/do_11400964389868339217/indiagate.jpeg", "identifier" -> "do_123", "objectType" -> "QuestionSet", "name" -> "Test QuestionSet", "status" -> "Live")
     val objData = new ObjectData("do_123", metadata, None, Some(hierarchy))
     val obj = new TestEcarGenerator()
     val result = obj.generateEcar(objData,List("SPINE"))
