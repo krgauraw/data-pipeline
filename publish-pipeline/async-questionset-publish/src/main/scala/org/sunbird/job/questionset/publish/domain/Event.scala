@@ -37,4 +37,10 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 	def validEvent(): Boolean = {
 		(StringUtils.equals("publish", action) && StringUtils.isNotBlank(objectId)) && (objectTypes.contains(objectType) && mimeTypes.contains(mimeType))
 	}
+
+	def getEventContext(): Map[String, AnyRef] = {
+		val mid: String = readOrDefault[String]("mid", "")
+		val requestId: String = readOrDefault[String]("edata.requestId", "")
+		Map("mid" -> mid, "requestId" -> requestId)
+	}
 }

@@ -2,23 +2,22 @@ package org.sunbird.job.questionset.function
 
 import akka.dispatch.ExecutionContexts
 import com.google.gson.reflect.TypeToken
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
+import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.publish.core.{DefinitionConfig, ExtDataConfig, ObjectData}
 import org.sunbird.job.publish.helpers.EcarPackageType
 import org.sunbird.job.questionset.publish.domain.PublishMetadata
 import org.sunbird.job.questionset.publish.helpers.QuestionPublisher
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
-import org.sunbird.job.util.{CassandraUtil, CloudStorageUtil, HttpUtil, Neo4JUtil}
+import org.sunbird.job.util.{CassandraUtil, CloudStorageUtil, HttpUtil, LoggerUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.lang.reflect.Type
-import org.apache.commons.lang3.StringUtils
-import org.sunbird.job.cache.{DataCache, RedisConnect}
-
 import scala.concurrent.ExecutionContext
 
 class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUtil,
@@ -60,28 +59,40 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
   }
 
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
-    logger.info("Question publishing started for : " + data.identifier)
-    metrics.incCounter(config.questionPublishEventCount)
-    val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
-    val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
-    val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
-    val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
-      val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)
-      new ObjectData(objData.identifier, newMeta, objData.extData, objData.hierarchy)
-    } else objData
-    val messages: List[String] = validate(obj, obj.identifier, validateQuestion)
-    if (messages.isEmpty) {
-      cache.del(obj.identifier)
-      val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
-      val objWithEcar = getObjectWithEcar(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-      logger.info("Ecar generation done for Question: " + objWithEcar.identifier)
-      saveOnSuccess(objWithEcar)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
-      metrics.incCounter(config.questionPublishSuccessEventCount)
-      logger.info("Question publishing completed successfully for : " + data.identifier)
-    } else {
-      saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
-      metrics.incCounter(config.questionPublishFailedEventCount)
-      logger.info("Question publishing failed for : " + data.identifier)
+    val requestId = data.eventContext.getOrElse("requestId", "").asInstanceOf[String]
+    try {
+      logger.info(s"Question publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
+      metrics.incCounter(config.questionPublishEventCount)
+      val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
+      val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
+      val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
+      val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
+        val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)
+        new ObjectData(objData.identifier, newMeta, objData.extData, objData.hierarchy)
+      } else objData
+      val messages: List[String] = validate(obj, obj.identifier, validateQuestion)
+      if (messages.isEmpty) {
+        cache.del(obj.identifier)
+        val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
+        val objWithEcar = getObjectWithEcar(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
+        logger.info(s"Ecar generation done for Question: ${objWithEcar.identifier}   | requestId: ${requestId}")
+        saveOnSuccess(objWithEcar)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
+        metrics.incCounter(config.questionPublishSuccessEventCount)
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Question publishing completed successfully for : ${data.identifier}"))
+      } else {
+        saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
+        metrics.incCounter(config.questionPublishFailedEventCount)
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Question publishing failed for : ${data.identifier}"))
+      }
+    } catch {
+      case e: Throwable => {
+        val errCode = "ERR_AQP_QPF"
+        val errorDesc = s"SYSTEM_ERROR: ${e.getMessage}"
+        val stackTrace : String = e.getStackTrace.toString
+        logger.error(LoggerUtil.getErrorLogs(errCode, errorDesc, requestId, stackTrace))
+        throw e
+      }
     }
+
   }
 }

@@ -10,7 +10,7 @@ import org.sunbird.job.questionset.publish.domain.PublishMetadata
 import java.util
 import scala.collection.JavaConverters._
 
-class QuestionSetPublishConfig(override val config: Config) extends PublishConfig(config, "questionset-publish"){
+class QuestionSetPublishConfig(override val config: Config) extends PublishConfig(config, "async-questionset-publish"){
 
 	implicit val mapTypeInfo: TypeInformation[util.Map[String, AnyRef]] = TypeExtractor.getForClass(classOf[util.Map[String, AnyRef]])
 	implicit val stringTypeInfo: TypeInformation[String] = TypeExtractor.getForClass(classOf[String])
