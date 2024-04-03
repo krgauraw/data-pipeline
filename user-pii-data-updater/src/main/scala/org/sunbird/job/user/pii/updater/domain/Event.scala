@@ -23,17 +23,21 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def objType: String = readOrDefault[String]("object.type", "")
 
-  def fromUserProfile: Map[String, AnyRef] = readOrDefault("edata.fromUserProfile", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def fromUserProfile: Map[String, AnyRef] = eData.getOrElse("fromUserProfile", Map.empty[String, AnyRef]).asInstanceOf[Map[String, AnyRef]]
 
-  def toUserProfile: Map[String, AnyRef] = readOrDefault("edata.toUserProfile", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def toUserProfile: Map[String, AnyRef] = eData.getOrElse("toUserProfile", Map.empty[String, AnyRef]).asInstanceOf[Map[String, AnyRef]]
 
-  def assetInformation: Map[String, AnyRef] = readOrDefault("edata.assetInformation", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def assetInformation: Map[String, AnyRef] = eData.getOrElse("assetInformation", Map.empty[String, AnyRef]).asInstanceOf[Map[String, AnyRef]]
 
   def fromUserId: String = fromUserProfile.getOrElse("userId", "").asInstanceOf[String]
 
   def toUserId: String = toUserProfile.getOrElse("userId", "").asInstanceOf[String]
 
   def validEvent(): Boolean = {
+    println("eData ::: "+eData)
+    println("fromUserProfile ::: "+fromUserProfile)
+    println("toUserProfile ::: "+toUserProfile)
+    println("assetInformation ::: "+assetInformation)
     validEventAction.contains(action) && StringUtils.equalsIgnoreCase("User", objType) && !eData.isEmpty && (action match {
       case "delete-user" => StringUtils.isNotBlank(userId)
       case "ownership-transfer" => validateFromUserProfile(fromUserProfile) && validateToUserProfile(toUserProfile)
