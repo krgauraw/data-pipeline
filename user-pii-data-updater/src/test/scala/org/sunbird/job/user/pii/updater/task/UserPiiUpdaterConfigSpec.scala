@@ -13,7 +13,9 @@ class UserPiiUpdaterConfigSpec extends FlatSpec with BeforeAndAfterAll with Matc
   "it" should "return required configurations" in {
     assert(StringUtils.equalsIgnoreCase("local", jobConfig.jobEnv))
     assert(StringUtils.equalsIgnoreCase("local.delete.user.job.request", jobConfig.kafkaInputTopic))
+    assert(StringUtils.equalsIgnoreCase("local.user.ownership.transfer", jobConfig.ownershipTransferInputTopic))
     assert(StringUtils.equalsIgnoreCase("user-pii-data-updater-consumer", jobConfig.inputConsumerName))
+    assert(StringUtils.equalsIgnoreCase("ownership-transfer-consumer", jobConfig.ownershipTransferInputConsumerName))
     assert(1 == jobConfig.kafkaConsumerParallelism)
     assert(1 == jobConfig.eventRouterParallelism)
     assert(1 == jobConfig.userPiiDataUpdaterParallelism)
