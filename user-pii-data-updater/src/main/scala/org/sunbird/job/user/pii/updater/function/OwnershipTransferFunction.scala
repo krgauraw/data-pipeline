@@ -14,9 +14,9 @@ import org.sunbird.job.util.{HttpUtil, Neo4JUtil}
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.util
-import scala.concurrent.ExecutionContext
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class OwnershipTransferFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil,
                                 @transient var neo4JUtil: Neo4JUtil = null,
@@ -45,7 +45,7 @@ class OwnershipTransferFunction(config: UserPiiUpdaterConfig, httpUtil: HttpUtil
 
   override def processElement(event: OwnershipTransferEvent, context: ProcessFunction[OwnershipTransferEvent, String]#Context, metrics: Metrics): Unit = {
     logger.info("OwnershipTransferFunction event: " + event)
-    val toUserRoles: List[String] = event.toUserProfile.getOrElse("roles", new util.ArrayList[String]()).asInstanceOf[java.util.List[String]].asScala.toList
+    val toUserRoles: List[String] = event.toUserProfile.getOrElse("roles", List()).asInstanceOf[List[String]]
     if (isValidUserRole(toUserRoles)(config)) {
       val idMap = new util.HashMap[String, String]()
       val failedIdMap = new util.HashMap[String, String]()
