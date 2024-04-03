@@ -265,7 +265,10 @@ user-pii-data-updater:
   user-pii-data-updater: |+
     include file("/data/flink/conf/base-config.conf")
     kafka {
-      input.topic = "{{ user_pii_updater_kafka_topic_name }}"
+      input {
+        user_pii_topic = "{{ user_pii_updater_kafka_topic_name }}"
+        ownership_transfer_topic = "{{ ownership_transfer_kafka_topic_name }}"
+      }
       groupId = "{{ user_pii_updater_group }}"
     }
     task {

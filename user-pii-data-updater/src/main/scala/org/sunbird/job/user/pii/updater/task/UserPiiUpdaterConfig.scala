@@ -20,8 +20,12 @@ class UserPiiUpdaterConfig (override val config: Config) extends BaseJobConfig(c
   val jobEnv: String = config.getString("job.env")
 
   // Kafka Topics Configuration
-  val kafkaInputTopic: String = config.getString("kafka.input.topic")
+  val kafkaInputTopic: String = config.getString("kafka.input.user_pii_topic")
   val inputConsumerName = "user-pii-data-updater-consumer"
+
+  // Kafka Topics Configuration
+  val ownershipTransferInputTopic: String = config.getString("kafka.input.ownership_transfer_topic")
+  val ownershipTransferInputConsumerName = "ownership-transfer-consumer"
 
   // Parallelism
   override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
