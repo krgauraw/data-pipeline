@@ -23,11 +23,11 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def objType: String = readOrDefault[String]("object.type", "")
 
-  def fromUserProfile: Map[String, AnyRef] = readOrDefault("edata.fromUserProfile", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def fromUserProfile: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.fromUserProfile", Map.empty[String, AnyRef])
 
-  def toUserProfile: Map[String, AnyRef] = readOrDefault("edata.toUserProfile", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def toUserProfile: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.toUserProfile", Map.empty[String, AnyRef])
 
-  def assetInformation: Map[String, AnyRef] = readOrDefault("edata.assetInformation", new java.util.HashMap[String, AnyRef]()).asScala.toMap
+  def assetInformation: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.assetInformation", Map.empty[String, AnyRef])
 
   def fromUserId: String = readOrDefault[String]("edata.fromUserProfile.userId", "user")
   def toUserId: String = readOrDefault[String]("edata.toUserProfile.userId", "user")
@@ -49,7 +49,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
     val userId: String = data.getOrElse("userId", "").asInstanceOf[String]
     val firstName: String = data.getOrElse("firstName", "").asInstanceOf[String]
     val lastName: String = data.getOrElse("lastName", "").asInstanceOf[String]
-    val roles: List[String] = data.getOrElse("roles", new util.ArrayList[String]()).asInstanceOf[java.util.List[String]].asScala.toList
+    val roles: List[String] = data.getOrElse("roles", List()).asInstanceOf[List[String]]
     StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(firstName) && StringUtils.isNotBlank(lastName) && !roles.isEmpty
   }
 
