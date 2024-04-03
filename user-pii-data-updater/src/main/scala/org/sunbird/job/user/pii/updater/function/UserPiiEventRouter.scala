@@ -28,10 +28,6 @@ class UserPiiEventRouter(config: UserPiiUpdaterConfig) extends BaseProcessFuncti
   override def processElement(event: Event, context: ProcessFunction[Event, String]#Context, metrics: Metrics): Unit = {
     metrics.incCounter(config.totalEventsCount)
     logger.info("UserPiiEventRouter :: Event: " + event)
-    //println("eData ::: " + event.eData)
-    println("fromUserProfile ::: " + event.fromUserProfile)
-    println("toUserProfile ::: " + event.toUserProfile)
-    println("assetInformation ::: " + event.assetInformation)
     if (event.validEvent()) {
       event.action match {
         case "delete-user" => {

@@ -3,7 +3,6 @@ package org.sunbird.job.user.pii.updater.domain
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.job.domain.reader.JobRequest
 
-import java.util
 import scala.collection.JavaConverters._
 
 class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) extends JobRequest(eventMap, partition, offset) {
@@ -13,7 +12,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def eventId: String = readOrDefault[String]("mid", "")
 
-  def eData: Map[String, AnyRef] = readOrDefault("edata", new util.HashMap[String, AnyRef]()).asScala.toMap
+  def eData: Map[String, AnyRef] = readOrDefault("edata", new java.util.HashMap[String, AnyRef]()).asScala.toMap
 
   def action: String = readOrDefault[String]("edata.action", "")
 
