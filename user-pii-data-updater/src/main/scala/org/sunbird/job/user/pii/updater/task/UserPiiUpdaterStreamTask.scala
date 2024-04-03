@@ -40,7 +40,7 @@ class UserPiiUpdaterStreamTask(config: UserPiiUpdaterConfig, kafkaConnector: Fli
       .uid(config.ownershipTransferInputConsumerName).setParallelism(config.kafkaConsumerParallelism)
       .rebalance
       .process(new UserPiiEventRouter(config))
-      .name("user-pii-event-router").uid("user-pii-event-router")
+      .name("ownership-transfer-router").uid("ownership-transfer-router")
       .setParallelism(config.eventRouterParallelism)
 
     val ownershipTransferStream = ownershipTransferProcessStreamTask.getSideOutput(config.ownershipTransferEventOutTag).process(new OwnershipTransferFunction(config, httpUtil))
