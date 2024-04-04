@@ -28,6 +28,23 @@ trait Neo4jDataProcessor {
     }
   }
 
+  def searchObjects(objectType: String, lookupKey: String, schemaVersion: String, userId: String)(implicit neo4JUtil: Neo4JUtil): List[ObjectData] = {
+    logger.info(s"Neo4jDataProcessor ::: searchObjects ::: Searching objects data for: objectType: ${objectType} , schemaVersion: ${schemaVersion}, userId: ${userId}, lookupKey: ${lookupKey}")
+    val output = generateSearchQuery(objectType, lookupKey, schemaVersion, userId, List())
+    logger.info("neo4j graph search query :::: " + output._1)
+    val statementResult = neo4JUtil.executeQuery(output._1)
+    val metaList = List("identifier", "objectType") ++ output._2
+    if (null != statementResult) {
+      statementResult.list().asScala.toList.map(record => {
+        val metadata: Map[String, AnyRef] = metaList.flatMap(meta => Map(meta -> record.get(meta).asString())).toMap
+        new ObjectData(record.get("identifier").asString(), metadata)
+      })
+    } else {
+      logger.info("No record found for objectType: ${objectType} , schemaVersion: ${schemaVersion}, lookupKey: ${lookupKey}, userId: ${userId}")
+      List()
+    }
+  }
+
   def generateSearchQuery(objectType: String, lookupKey: String, schemaVersion: String, userId: String, targetKeys: List[String]): (String, List[String]) = {
     val graphQuery = s"""MATCH(n:domain) WHERE n.IL_FUNC_OBJECT_TYPE IN ["${objectType}","${objectType}Image"] AND n.IL_SYS_NODE_TYPE="DATA_NODE" AND n.${lookupKey}="${userId}" SC_VERSION RETURN n.IL_UNIQUE_ID AS identifier, n.IL_FUNC_OBJECT_TYPE AS objectType TARGET_FIELDS;"""
     val updatedTargetKeys: List[String] = targetKeys.map(key => {

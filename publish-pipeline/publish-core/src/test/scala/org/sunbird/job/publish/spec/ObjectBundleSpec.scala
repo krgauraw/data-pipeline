@@ -6,7 +6,6 @@ import org.apache.commons.lang3.StringUtils
 import org.mockito.Mockito
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.mockito.MockitoSugar.mock
 import org.sunbird.job.domain.`object`.DefinitionCache
 import org.sunbird.job.exception.InvalidInputException
 import org.sunbird.job.publish.config.PublishConfig
@@ -25,14 +24,14 @@ class ObjectBundleSpec extends FlatSpec with BeforeAndAfterAll with Matchers wit
   //	implicit val cloudStorageUtil: CloudStorageUtil = new CloudStorageUtil(publishConfig)
   implicit val mockNeo4JUtil: Neo4JUtil = mock[Neo4JUtil](Mockito.withSettings().serializable())
   implicit val ec: ExecutionContextExecutor = ExecutionContexts.global
-  val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddevbbpublic.blob.core.windows.net/sunbird-content-staging-inquiry/schemas/local"
+  val definitionBasePath: String = if (config.hasPath("schema.basePath")) config.getString("schema.basePath") else "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local"
   val schemaSupportVersionMap = if (config.hasPath("schema.supportedVersion")) config.getObject("schema.supportedVersion").unwrapped().asScala.toMap else Map[String, AnyRef]()
   implicit val defCache = new DefinitionCache()
   implicit val defConfig = DefinitionConfig(schemaSupportVersionMap, definitionBasePath)
 
   "validUrl" should "return true for valid url input" in {
     val obj = new TestObjectBundle
-    val result = obj.validUrl("https://sunbirddevbbpublic.blob.core.windows.net//questionset/do_2137002409025290241504/artifact/download-1.thumb.jpg")
+    val result = obj.validUrl("https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/assets/do_11400964389868339217/indiagate.jpeg")
     result should be(true)
   }
 

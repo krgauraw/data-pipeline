@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.sunbird.job.Metrics
 import org.sunbird.job.exception.ServerException
-import org.sunbird.job.user.pii.updater.domain.{ObjectData, UserPiiEvent}
+import org.sunbird.job.user.pii.updater.domain.{ObjectData, OwnershipTransferEvent, UserPiiEvent}
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
 import org.sunbird.job.util.{HttpUtil, JSONUtil}
 
@@ -33,6 +33,22 @@ trait UserPiiUpdater extends NotificationProcessor {
     }
   }
 
+  def processOwnershipTransferResult(event: OwnershipTransferEvent, idMap: util.HashMap[String, String], failedIdMap: util.HashMap[String, String])(implicit config: UserPiiUpdaterConfig, httpUtil: HttpUtil, metrics: Metrics): Unit = {
+    if (!idMap.isEmpty && failedIdMap.isEmpty) {
+      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: All data transferred to ${event.toUserId} successfully. Total Identifiers affected : ${idMap.keySet()}")
+      metrics.incCounter(config.ownershipTransferSuccessEventCount)
+    } else if (idMap.isEmpty && failedIdMap.isEmpty) {
+      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Event Skipped with from userId : ${event.fromUserId} because no object found for given user.")
+      metrics.incCounter(config.ownershipTransferSkippedEventCount)
+    } else if (!idMap.isEmpty && !failedIdMap.isEmpty) {
+      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing completed partially for from user id : ${event.fromUserId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
+      //throw new ServerException("ERR_PROCESSING_FAILED", s"Ownership Transfer processing completed partially for user id : ${event.fromUserId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
+    } else if (idMap.isEmpty && !failedIdMap.isEmpty) {
+      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing failed for from user id : ${event.fromUserId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
+      throw new ServerException("ERR_PROCESSING_FAILED", s"Ownership Transfer processing failed for from user id : ${event.fromUserId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
+    }
+  }
+
   def processNestedProp(key: String, node: ObjectData)(implicit config: UserPiiUpdaterConfig): Map[String, String] = {
     val nestedKeys: List[String] = (key.split("\\.")).toList
     val nodeProp = node.getString(nestedKeys(0), "{}")
@@ -50,6 +66,11 @@ trait UserPiiUpdater extends NotificationProcessor {
     } else {
       data.put(keys(counter), propValue)
     }
+  }
+
+  def isValidUserRole(toUserRoles: List[String])(implicit config: UserPiiUpdaterConfig): Boolean = {
+    val userRoles = config.ownershipTransferValidRoles.toList
+    userRoles.exists(toUserRoles.contains)
   }
 
 }
