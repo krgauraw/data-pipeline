@@ -34,7 +34,7 @@ class UserPiiEventRouter(config: UserPiiUpdaterConfig) extends BaseProcessFuncti
     if (event.validEvent()) {
       event.action match {
         case "delete-user" => {
-          logger.info(s"UserPiiEventRouter :: Sending Event For User Pii Data Cleanup having userId: ${event.userId} | requestId: ${requestId}" + )
+          logger.info(s"UserPiiEventRouter :: Sending Event For User Pii Data Cleanup having userId: ${event.userId} | requestId: ${requestId}")
           context.output(config.userPiiEventOutTag, UserPiiEvent(event.getEventContext(), event.eventId, event.objType, event.userId, event.userName, event.orgAdminUserId))
         }
         case "ownership-transfer" => {
