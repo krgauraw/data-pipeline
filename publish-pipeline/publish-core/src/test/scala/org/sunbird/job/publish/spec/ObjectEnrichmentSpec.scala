@@ -37,7 +37,7 @@ class ObjectEnrichmentSpec extends FlatSpec with BeforeAndAfterAll with Matchers
     when(mockNeo4JUtil.getNodesName(List("NCERT"))).thenReturn(Map("NCERT"-> "NCERT"))
 
     val hierarchy = Map("identifier" -> "do_123", "children" -> List(Map("identifier" -> "do_234", "name" -> "Children-1"), Map("identifier" -> "do_345", "name" -> "Children-2")))
-    val metadata = Map("identifier" -> "do_123", "targetFWIds" -> List("NCERT"), "boardIds" -> List("NCERT"), "appIcon" -> "https://dev.sunbirded.org/assets/images/sunbird_logo.png", "IL_UNIQUE_ID" -> "do_123", "IL_FUNC_OBJECT_TYPE" -> "QuestionSet", "name" -> "Test QuestionSet", "status" -> "Live")
+    val metadata = Map("identifier" -> "do_123", "targetFWIds" -> List("NCERT"), "boardIds" -> List("NCERT"), "appIcon" -> "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/content/assets/do_11400964389868339217/indiagate.jpeg", "IL_UNIQUE_ID" -> "do_123", "IL_FUNC_OBJECT_TYPE" -> "QuestionSet", "name" -> "Test QuestionSet", "status" -> "Live")
     val objData = new ObjectData("do_123", metadata, None, Some(hierarchy))
 
     val objectEnrichment = new TestObjectEnrichment()

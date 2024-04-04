@@ -107,6 +107,7 @@ questionset_migration_parallelism: 1
 
 ### user-pii-data-updater config
 user_pii_updater_kafka_topic_name: "{{ env_name }}.delete.user"
+ownership_transfer_kafka_topic_name: "{{ env_name }}.user.ownership.transfer"
 user_pii_updater_group: "{{ env_name }}-user-pii-updater-group"
 user_pii_target_object_types: '{
   "Question": ["1.0", "1.1"],
@@ -116,4 +117,6 @@ user_pii_replacement_value: "Deleted User"
 user_org_service_base_url: "http://{{private_ingressgateway_ip}}/userorg"
 email_notification_subject: "User Account Deletion Notification"
 email_notification_regards: "Team"
+
+ownership_transfer_user_roles: '["CONTENT_CREATOR", "BOOK_CREATOR"]'
 

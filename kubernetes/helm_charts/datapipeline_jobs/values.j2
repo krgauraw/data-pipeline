@@ -265,7 +265,10 @@ user-pii-data-updater:
   user-pii-data-updater: |+
     include file("/data/flink/conf/base-config.conf")
     kafka {
-      input.topic = "{{ user_pii_updater_kafka_topic_name }}"
+      input {
+        user_pii_topic = "{{ user_pii_updater_kafka_topic_name }}"
+        ownership_transfer_topic = "{{ ownership_transfer_kafka_topic_name }}"
+      }
       groupId = "{{ user_pii_updater_group }}"
     }
     task {
@@ -282,7 +285,8 @@ user-pii-data-updater:
         subject: "{{ email_notification_subject }}",
         regards: "{{ email_notification_regards }}"
       }
-    }
+    },
+    ownership_transfer_roles={{ ownership_transfer_user_roles }}
   flink-conf: |+
     jobmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].jobmanager_memory }}
     taskmanager.memory.flink.size: {{ flink_job_names['user-pii-data-updater'].taskmanager_memory }}

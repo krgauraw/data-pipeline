@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) extends JobRequest(eventMap, partition, offset) {
 
   private val jobName = "user-pii-data-updater"
-  private val validEventAction = List("delete-user")
+  private val validEventAction = List("delete-user", "ownership-transfer")
 
   def eventId: String = readOrDefault[String]("mid", "")
 
@@ -22,8 +22,34 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def objType: String = readOrDefault[String]("object.type", "")
 
+  def fromUserProfile: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.fromUserProfile", Map.empty[String, AnyRef])
+
+  def toUserProfile: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.toUserProfile", Map.empty[String, AnyRef])
+
+  def assetInformation: Map[String, AnyRef] = readOrDefault[Map[String, AnyRef]]("edata.assetInformation", Map.empty[String, AnyRef])
+
+  def fromUserId: String = readOrDefault[String]("edata.fromUserProfile.userId", "user")
+  def toUserId: String = readOrDefault[String]("edata.toUserProfile.userId", "user")
+
   def validEvent(): Boolean = {
-    validEventAction.contains(action) && StringUtils.isNotBlank(userId)
+    validEventAction.contains(action) && StringUtils.equalsIgnoreCase("User", objType) && (action match {
+      case "delete-user" => StringUtils.isNotBlank(userId)
+      case "ownership-transfer" => validateFromUserProfile(fromUserProfile) && validateToUserProfile(toUserProfile)
+      case _ => false
+    })
+  }
+
+  def validateFromUserProfile(data: Map[String, AnyRef]): Boolean = {
+    val userId: String = data.getOrElse("userId", "").asInstanceOf[String]
+    StringUtils.isNotBlank(userId)
+  }
+
+  def validateToUserProfile(data: Map[String, AnyRef]): Boolean = {
+    val userId: String = data.getOrElse("userId", "").asInstanceOf[String]
+    val firstName: String = data.getOrElse("firstName", "").asInstanceOf[String]
+    val lastName: String = data.getOrElse("lastName", "").asInstanceOf[String]
+    val roles: List[String] = data.getOrElse("roles", List()).asInstanceOf[List[String]]
+    StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(firstName) && StringUtils.isNotBlank(lastName) && !roles.isEmpty
   }
 
   def orgAdminUserId(): List[String] = {
