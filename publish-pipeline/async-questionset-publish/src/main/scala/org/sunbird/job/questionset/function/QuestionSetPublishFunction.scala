@@ -115,13 +115,13 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
       } else {
         saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
         metrics.incCounter(config.questionSetPublishFailedEventCount)
-        logger.info("QuestionSet publishing failed for : " + data.identifier)
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString(", ")} "))
       }
     } catch {
       case e: Throwable => {
-        val errCode = "ERR_AQP_QSPF"
+        val errCode = "ERR_AQP_QUESTIONSET_PUBLISH_FAILED"
         val errorDesc = s"SYSTEM_ERROR: ${e.getMessage}"
-        val stackTrace: String = e.getStackTrace.toString
+        val stackTrace: String = e.getStackTraceString
         logger.error(LoggerUtil.getErrorLogs(errCode, errorDesc, requestId, stackTrace))
         throw e
       }

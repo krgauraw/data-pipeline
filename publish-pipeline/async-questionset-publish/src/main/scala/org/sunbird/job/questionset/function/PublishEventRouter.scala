@@ -51,7 +51,6 @@ class PublishEventRouter(config: QuestionSetPublishConfig) extends BaseProcessFu
 				}
 			}
 		} else {
-      logger.info("Event skipped for identifier: " + event.objectId + " objectType: " + event.objectType)
 			val exitMsg = s"""Event skipped for identifier: ${event.objectId} , objectType: ${event.objectType}"""
 			logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
 			metrics.incCounter(config.skippedEventCount)

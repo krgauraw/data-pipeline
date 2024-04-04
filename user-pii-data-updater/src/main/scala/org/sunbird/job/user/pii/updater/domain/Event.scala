@@ -57,4 +57,10 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
     val adminIds: List[String] = suggestedUsers.filter(su => StringUtils.equalsIgnoreCase("ORG_ADMIN", su.getOrElse("role", "").asInstanceOf[String])).flatMap(oa => oa.getOrElse("users", List()).asInstanceOf[List[String]])
     adminIds
   }
+
+  def getEventContext(): Map[String, AnyRef] = {
+    val mid: String = readOrDefault[String]("mid", "")
+    val requestId: String = readOrDefault[String]("edata.requestId", "")
+    Map("mid" -> mid, "requestId" -> requestId)
+  }
 }
