@@ -110,12 +110,12 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
         } else {
           saveOnFailure(obj, pubMsgs, data.pkgVersion)(neo4JUtil)
           metrics.incCounter(config.questionSetPublishFailedEventCount)
-          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier}"))
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} | Errors: ${pubMsgs.mkString("; ")}"))
         }
       } else {
         saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
         metrics.incCounter(config.questionSetPublishFailedEventCount)
-        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString(", ")} "))
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString("; ")} "))
       }
     } catch {
       case e: Throwable => {
