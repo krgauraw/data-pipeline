@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
 import org.sunbird.job.questionset.publish.domain.{Event, PublishMetadata}
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
+import org.sunbird.job.util.LoggerUtil
 import org.sunbird.job.{BaseProcessFunction, Metrics}
 
 import java.lang.reflect.Type
@@ -30,25 +31,31 @@ class PublishEventRouter(config: QuestionSetPublishConfig) extends BaseProcessFu
 
 	override def processElement(event: Event, context: ProcessFunction[Event, String]#Context, metrics: Metrics): Unit = {
 		metrics.incCounter(config.totalEventsCount)
+		val requestId = event.getEventContext().getOrElse("requestId", "").asInstanceOf[String]
+		val entryMsg = s"""Received Event For Publish. | Event : ${event}"""
+		logger.info(LoggerUtil.getEntryLogs(config.jobName, requestId, entryMsg))
 		if (event.validEvent()) {
-			logger.info("PublishEventRouter :: Event: " + event)
 			event.objectType match {
 				case "Question" | "QuestionImage" => {
-					logger.info("PublishEventRouter :: Sending Question For Publish Having Identifier: " + event.objectId)
-					context.output(config.questionPublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
+					logger.info(s"PublishEventRouter :: Sending Question For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
+					context.output(config.questionPublishOutTag, PublishMetadata(event.getEventContext(), event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case "QuestionSet" | "QuestionSetImage" => {
-					logger.info("PublishEventRouter :: Sending QuestionSet For Publish Having Identifier: " + event.objectId)
-					context.output(config.questionSetPublishOutTag, PublishMetadata(event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
+					logger.info(s"PublishEventRouter :: Sending QuestionSet For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
+					context.output(config.questionSetPublishOutTag, PublishMetadata(event.getEventContext(), event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case _ => {
 					metrics.incCounter(config.skippedEventCount)
-					logger.info("Invalid Object Type Received For Publish.| Identifier : " + event.objectId + " , objectType : " + event.objectType)
+					val exitMsg = s"""Invalid Object Type Received For Publish.| Identifier : ${event.objectId} , objectType : ${event.objectType}"""
+					logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
 				}
 			}
 		} else {
-      logger.warn("Event skipped for identifier: " + event.objectId + " objectType: " + event.objectType)
+			val exitMsg = s"""Event skipped for identifier: ${event.objectId} , objectType: ${event.objectType}"""
+			logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
 			metrics.incCounter(config.skippedEventCount)
 		}
+
+
 	}
 }

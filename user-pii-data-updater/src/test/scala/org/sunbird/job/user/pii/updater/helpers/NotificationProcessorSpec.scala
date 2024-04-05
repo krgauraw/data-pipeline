@@ -28,20 +28,20 @@ class NotificationProcessorSpec extends FlatSpec with BeforeAndAfterAll with Mat
 
   "sendNotification" should "send notification successfully" in {
     when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIResponse())
-    new TestNotificationProcessor().sendNotification(Map("do_123"->"Draft","do_234"->"Live"), "abc123", "Test User", List("def12dhfbd","fvjsvfr232hhkbd"))
+    new TestNotificationProcessor().sendNotification("abc123", Map("do_123"->"Draft","do_234"->"Live"), "abc123", "Test User", List("def12dhfbd","fvjsvfr232hhkbd"))
     assert(true)
   }
 
   "sendNotification with empty org admin ids" should "skip notification" in {
     when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIResponse())
-    new TestNotificationProcessor().sendNotification(Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List())
+    new TestNotificationProcessor().sendNotification("abc123", Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List())
     assert(true)
   }
 
   "sendNotification" should "throw an exception if api call fails" in {
     when(httpUtil.post(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any())).thenReturn(getNotificationAPIFailureResponse())
     assertThrows[ServerException] {
-      new TestNotificationProcessor().sendNotification(Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List("def12dhfbd", "fvjsvfr232hhkbd"))
+      new TestNotificationProcessor().sendNotification("abc123", Map("do_123" -> "Draft", "do_234" -> "Live"), "abc123", "Test User", List("def12dhfbd", "fvjsvfr232hhkbd"))
     }
   }
 

@@ -6,7 +6,7 @@ import org.sunbird.job.Metrics
 import org.sunbird.job.exception.ServerException
 import org.sunbird.job.user.pii.updater.domain.{ObjectData, OwnershipTransferEvent, UserPiiEvent}
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
-import org.sunbird.job.util.{HttpUtil, JSONUtil}
+import org.sunbird.job.util.{HttpUtil, JSONUtil, LoggerUtil}
 
 import java.util
 import scala.collection.JavaConversions._
@@ -16,35 +16,44 @@ trait UserPiiUpdater extends NotificationProcessor {
   private[this] val logger = LoggerFactory.getLogger(classOf[UserPiiUpdater])
 
   def processResult(userEvent: UserPiiEvent, idMap: util.HashMap[String, String], failedIdMap: util.HashMap[String, String])(implicit config: UserPiiUpdaterConfig, httpUtil: HttpUtil, metrics: Metrics): Unit = {
+    val requestId = userEvent.eventContext.getOrElse("requestId", "").asInstanceOf[String]
     if (!idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processResult :: All PII data processed successfully for user id : ${userEvent.userId}. Total Identifiers affected : ${idMap.keySet()}")
+      logger.info(s"UserPiiUpdater ::: processResult :: All PII data processed successfully for user id : ${userEvent.userId}. Total Identifiers affected : ${idMap.keySet()} | requestId: ${requestId}")
       metrics.incCounter(config.userPiiUpdateSuccessEventCount)
-      sendNotification(idMap.toMap, userEvent.userId, userEvent.userName, userEvent.orgAdminUserId)(config, httpUtil)
+      sendNotification(requestId, idMap.toMap, userEvent.userId, userEvent.userName, userEvent.orgAdminUserId)(config, httpUtil)
     } else if (idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processResult :: Event Skipped for user id : ${userEvent.userId} because no object found for given user.")
+      val exitMsg = s"UserPiiUpdater ::: processResult :: Event Skipped for user id : ${userEvent.userId} because no object found for given user."
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       metrics.incCounter(config.userPiiUpdateSkippedEventCount)
     } else if (!idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processResult :: All PII data processing completed partially for user id : ${userEvent.userId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
+      val exitMsg = s"UserPiiUpdater ::: processResult :: All PII data processing completed partially for user id : ${userEvent.userId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       throw new ServerException("ERR_PROCESSING_FAILED", s"All PII data processing completed partially for user id : ${userEvent.userId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
       //metrics.incCounter(config.userPiiUpdatePartialSuccessEventCount)
     } else if (idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processResult :: All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
+      val exitMsg = s"UserPiiUpdater ::: processResult :: All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       throw new ServerException("ERR_PROCESSING_FAILED", s"All PII data processing failed for user id : ${userEvent.userId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
     }
   }
 
   def processOwnershipTransferResult(event: OwnershipTransferEvent, idMap: util.HashMap[String, String], failedIdMap: util.HashMap[String, String])(implicit config: UserPiiUpdaterConfig, httpUtil: HttpUtil, metrics: Metrics): Unit = {
+    val requestId = event.eventContext.getOrElse("requestId", "").asInstanceOf[String]
     if (!idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: All data transferred to ${event.toUserId} successfully. Total Identifiers affected : ${idMap.keySet()}")
+      val exitMsg = s"UserPiiUpdater ::: processOwnershipTransferResult :: All data transferred to ${event.toUserId} successfully. Total Identifiers affected : ${idMap.keySet()}"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       metrics.incCounter(config.ownershipTransferSuccessEventCount)
     } else if (idMap.isEmpty && failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Event Skipped with from userId : ${event.fromUserId} because no object found for given user.")
+      val exitMsg = s"UserPiiUpdater ::: processOwnershipTransferResult :: Event Skipped with from userId : ${event.fromUserId} because no object found for given user."
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       metrics.incCounter(config.ownershipTransferSkippedEventCount)
     } else if (!idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing completed partially for from user id : ${event.fromUserId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
+      val exitMsg = s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing completed partially for from user id : ${event.fromUserId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       //throw new ServerException("ERR_PROCESSING_FAILED", s"Ownership Transfer processing completed partially for user id : ${event.fromUserId}. Total Success Identifiers: ${idMap.keySet()} | Total Failed Identifiers : ${failedIdMap.keySet()}")
     } else if (idMap.isEmpty && !failedIdMap.isEmpty) {
-      logger.info(s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing failed for from user id : ${event.fromUserId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
+      val exitMsg = s"UserPiiUpdater ::: processOwnershipTransferResult :: Ownership Transfer processing failed between from_user_id : ${event.fromUserId} to_user_id : ${event.toUserId}. Total Failed Identifiers : ${failedIdMap.keySet()}"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       throw new ServerException("ERR_PROCESSING_FAILED", s"Ownership Transfer processing failed for from user id : ${event.fromUserId}. Total Failed Identifiers : ${failedIdMap.keySet()}")
     }
   }

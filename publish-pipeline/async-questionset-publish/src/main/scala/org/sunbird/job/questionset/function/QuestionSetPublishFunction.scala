@@ -7,6 +7,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
+import org.sunbird.job.cache.{DataCache, RedisConnect}
 import org.sunbird.job.domain.`object`.{DefinitionCache, ObjectDefinition}
 import org.sunbird.job.publish.config.PublishConfig
 import org.sunbird.job.publish.core.{DefinitionConfig, ExtDataConfig, ObjectData}
@@ -17,10 +18,8 @@ import org.sunbird.job.questionset.publish.util.QuestionPublishUtil
 import org.sunbird.job.questionset.task.QuestionSetPublishConfig
 import org.sunbird.job.util._
 import org.sunbird.job.{BaseProcessFunction, Metrics}
+
 import java.lang.reflect.Type
-
-import org.sunbird.job.cache.{DataCache, RedisConnect}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
@@ -65,57 +64,69 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
   }
 
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
-    logger.info("QuestionSet publishing started for : " + data.identifier)
-    metrics.incCounter(config.questionSetPublishEventCount)
-    val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
-    val readerConfig = ExtDataConfig(config.questionSetKeyspaceName, config.questionSetTableName, definition.getExternalPrimaryKey, definition.getExternalProps)
-    val qDef: ObjectDefinition = definitionCache.getDefinition("Question", data.schemaVersion, config.definitionBasePath)
-    val qReaderConfig = ExtDataConfig(config.questionKeyspaceName, qDef.getExternalTable, qDef.getExternalPrimaryKey, qDef.getExternalProps)
-    val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
-    val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
-      val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)
-      new ObjectData(objData.identifier, newMeta, objData.extData, objData.hierarchy)
-    } else objData
-    logger.info("processElement ::: obj metadata before publish ::: " + ScalaJsonUtil.serialize(obj.metadata))
-    logger.info("processElement ::: obj hierarchy before publish ::: " + ScalaJsonUtil.serialize(obj.hierarchy.getOrElse(Map())))
-    val messages: List[String] = validate(obj, obj.identifier, validateQuestionSet)
-    if (messages.isEmpty) {
-      val cacheKey = s"""qs_hierarchy_${obj.identifier}"""
-      cache.del(cacheKey)
-      cache.del(obj.identifier)
-      // Get all the questions from hierarchy
-      val qList: List[ObjectData] = getQuestions(obj, qReaderConfig)(cassandraUtil, config)
-      logger.info("processElement ::: child questions list from hierarchy :::  " + qList)
-      // Filter out questions having visibility parent (which need to be published)
-      val childQuestions: List[ObjectData] = qList.filter(q => isValidChildQuestion(q, obj.getString("createdBy", "")))
-      //TODO: Remove below statement
-      childQuestions.foreach(ch => logger.info(s"child questions which are going to be published.  identifier : ${ch.identifier} , visibility: ${ch.getString("visibility", "")} , createdBy: ${ch.getString("createdBy", "")}"))
-      // Publish Child Questions
-      QuestionPublishUtil.publishQuestions(obj.identifier, childQuestions, data.pkgVersion, data.lastPublishedBy)(ec, neo4JUtil, cassandraUtil, qReaderConfig, cloudStorageUtil, definitionCache, definitionConfig, config, httpUtil)
-      val pubMsgs: List[String] = isChildrenPublished(childQuestions, data.publishType, qReaderConfig)
-      if (pubMsgs.isEmpty) {
-        // Enrich Object as well as hierarchy
-        val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
-        logger.info(s"processElement ::: object enrichment done for ${obj.identifier}")
-        logger.info("processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
-        logger.info("processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
-        // Generate ECAR
-        val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-        // Generate PDF URL
-        val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil)
-        saveOnSuccess(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
-        logger.info("QuestionSet publishing completed successfully for : " + data.identifier)
-        metrics.incCounter(config.questionSetPublishSuccessEventCount)
+    val requestId = data.eventContext.getOrElse("requestId", "").asInstanceOf[String]
+    try {
+      logger.info(s"QuestionSet publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
+      metrics.incCounter(config.questionSetPublishEventCount)
+      val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
+      val readerConfig = ExtDataConfig(config.questionSetKeyspaceName, config.questionSetTableName, definition.getExternalPrimaryKey, definition.getExternalProps)
+      val qDef: ObjectDefinition = definitionCache.getDefinition("Question", data.schemaVersion, config.definitionBasePath)
+      val qReaderConfig = ExtDataConfig(config.questionKeyspaceName, qDef.getExternalTable, qDef.getExternalPrimaryKey, qDef.getExternalProps)
+      val objData = getObject(data.identifier, data.pkgVersion, data.mimeType, data.publishType, readerConfig)(neo4JUtil, cassandraUtil, config)
+      val obj = if (StringUtils.isNotBlank(data.lastPublishedBy)) {
+        val newMeta = objData.metadata ++ Map("lastPublishedBy" -> data.lastPublishedBy)
+        new ObjectData(objData.identifier, newMeta, objData.extData, objData.hierarchy)
+      } else objData
+      logger.info("processElement ::: obj metadata before publish ::: " + ScalaJsonUtil.serialize(obj.metadata))
+      logger.info("processElement ::: obj hierarchy before publish ::: " + ScalaJsonUtil.serialize(obj.hierarchy.getOrElse(Map())))
+      val messages: List[String] = validate(obj, obj.identifier, validateQuestionSet)
+      if (messages.isEmpty) {
+        val cacheKey = s"""qs_hierarchy_${obj.identifier}"""
+        cache.del(cacheKey)
+        cache.del(obj.identifier)
+        // Get all the questions from hierarchy
+        val qList: List[ObjectData] = getQuestions(obj, qReaderConfig)(cassandraUtil, config)
+        logger.info("processElement ::: child questions list from hierarchy :::  " + qList)
+        // Filter out questions having visibility parent (which need to be published)
+        val childQuestions: List[ObjectData] = qList.filter(q => isValidChildQuestion(q, obj.getString("createdBy", "")))
+        //TODO: Remove below statement
+        childQuestions.foreach(ch => logger.info(s"child questions which are going to be published.  identifier : ${ch.identifier} , visibility: ${ch.getString("visibility", "")} , createdBy: ${ch.getString("createdBy", "")}"))
+        // Publish Child Questions
+        QuestionPublishUtil.publishQuestions(obj.identifier, childQuestions, data.pkgVersion, data.lastPublishedBy)(ec, neo4JUtil, cassandraUtil, qReaderConfig, cloudStorageUtil, definitionCache, definitionConfig, config, httpUtil)
+        val pubMsgs: List[String] = isChildrenPublished(childQuestions, data.publishType, qReaderConfig)
+        if (pubMsgs.isEmpty) {
+          // Enrich Object as well as hierarchy
+          val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
+          logger.info(s"processElement ::: object enrichment done for ${obj.identifier} | requestId: ${requestId}")
+          logger.info("processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
+          logger.info("processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
+          // Generate ECAR
+          val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
+          // Generate PDF URL
+          val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil)
+          saveOnSuccess(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing completed successfully for : ${data.identifier}"))
+          metrics.incCounter(config.questionSetPublishSuccessEventCount)
+        } else {
+          saveOnFailure(obj, pubMsgs, data.pkgVersion)(neo4JUtil)
+          metrics.incCounter(config.questionSetPublishFailedEventCount)
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} | Errors: ${pubMsgs.mkString("; ")}"))
+        }
       } else {
-        saveOnFailure(obj, pubMsgs, data.pkgVersion)(neo4JUtil)
+        saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
         metrics.incCounter(config.questionSetPublishFailedEventCount)
-        logger.info("QuestionSet publishing failed for : " + data.identifier)
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString("; ")} "))
       }
-    } else {
-      saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
-      metrics.incCounter(config.questionSetPublishFailedEventCount)
-      logger.info("QuestionSet publishing failed for : " + data.identifier)
+    } catch {
+      case e: Throwable => {
+        val errCode = "ERR_AQP_QUESTIONSET_PUBLISH_FAILED"
+        val errorDesc = s"SYSTEM_ERROR: ${e.getMessage}"
+        val stackTrace: String = e.getStackTraceString
+        logger.error(LoggerUtil.getErrorLogs(errCode, errorDesc, requestId, stackTrace))
+        throw e
+      }
     }
+
   }
 
   //TODO: Implement Multiple Data Read From Neo4j and Use it here.

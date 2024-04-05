@@ -3,7 +3,7 @@ package org.sunbird.job.user.pii.updater.helpers
 import org.slf4j.LoggerFactory
 import org.sunbird.job.exception.ServerException
 import org.sunbird.job.user.pii.updater.task.UserPiiUpdaterConfig
-import org.sunbird.job.util.{HTTPResponse, HttpUtil}
+import org.sunbird.job.util.{HTTPResponse, HttpUtil, LoggerUtil}
 
 import scala.collection.JavaConverters._
 
@@ -11,27 +11,33 @@ trait NotificationProcessor {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[NotificationProcessor])
 
-  def sendNotification(data: Map[String, String], userId: String, userName: String, orgAdminIds: List[String])(implicit config: UserPiiUpdaterConfig, httpUtil: HttpUtil): Unit = {
+  def sendNotification(requestId: String, data: Map[String, String], userId: String, userName: String, orgAdminIds: List[String])(implicit config: UserPiiUpdaterConfig, httpUtil: HttpUtil): Unit = {
     if (config.admin_email_notification_enable) {
       orgAdminIds.isEmpty match {
-        case true => logger.info(s"NotificationProcessor ::: sendNotification ::: Org Admin Ids Not Available. So Notification Skipped for userId : ${userId}")
+        case true => {
+          val exitMsg = s"NotificationProcessor ::: sendNotification ::: Org Admin Ids Not Available. So Notification Skipped for userId : ${userId}"
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
+        }
         case false => {
-          logger.info(s"NotificationProcessor ::: sendNotification ::: Notification will be triggered to admin user ids ::: ${orgAdminIds}")
+          logger.info(s"NotificationProcessor ::: sendNotification ::: Notification will be triggered to admin user ids ::: ${orgAdminIds} | requestId: ${requestId}")
           val url = config.userorg_service_baseUrl + "/v2/notification"
           val body = getRequestBody(data, userId, userName, orgAdminIds)
           val header: Map[String, String] = Map("Content-Type" -> "application/json", "Accept" -> "application/json")
           logger.info(s"url : ${url} | request body : ${body} ")
           val httpResponse: HTTPResponse = httpUtil.post(url, body, header)
           if (httpResponse.status == 200) {
-            logger.info(s"NotificationProcessor ::: sendNotification ::: Notification sent successfully to admin user ids : ${orgAdminIds} for user id: ${userId}")
+            val exitMsg = s"NotificationProcessor ::: sendNotification ::: Notification sent successfully to admin user ids : ${orgAdminIds} for user id: ${userId}"
+            logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
           } else {
-            logger.info(s"NotificationProcessor ::: sendNotification ::: Notification could not sent to admin user ids : ${orgAdminIds} for user id: ${userId}")
+            val exitMsg = s"NotificationProcessor ::: sendNotification ::: Notification could not sent to admin user ids : ${orgAdminIds} for user id: ${userId}"
+            logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
             throw new ServerException("ERR_NOTIFICATION_API_CALL", s"Invalid Response received while sending notification for user: ${userId} | Response Code: ${httpResponse.status} , Response Body:  " + httpResponse.body)
           }
         }
       }
     } else {
-      logger.info(s"NotificationProcessor ::: sendNotification ::: notification disabled for the job")
+      val exitMsg = s"NotificationProcessor ::: sendNotification ::: notification disabled for the job"
+      logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
     }
   }
 
