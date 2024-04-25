@@ -35,6 +35,7 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
   @transient var ec: ExecutionContext = _
   @transient var cache: DataCache = _
   private val pkgTypes = List(EcarPackageType.FULL.toString, EcarPackageType.ONLINE.toString)
+  val featureId = "QuestionPublish"
 
   override def open(parameters: Configuration): Unit = {
     super.open(parameters)
@@ -61,7 +62,7 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
     val requestId = data.eventContext.getOrElse("requestId", "").asInstanceOf[String]
     try {
-      logger.info(s"Question publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
+      logger.info(s"Feature:${featureId} | Question publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
       metrics.incCounter(config.questionPublishEventCount)
       val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
       val readerConfig = ExtDataConfig(config.questionKeyspaceName, definition.getExternalTable, definition.getExternalPrimaryKey, definition.getExternalProps)
@@ -75,14 +76,14 @@ class QuestionPublishFunction(config: QuestionSetPublishConfig, httpUtil: HttpUt
         cache.del(obj.identifier)
         val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
         val objWithEcar = getObjectWithEcar(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
-        logger.info(s"Ecar generation done for Question: ${objWithEcar.identifier}   | requestId: ${requestId}")
+        logger.info(s"Feature:${featureId} | Ecar generation done for Question: ${objWithEcar.identifier}   | requestId: ${requestId}")
         saveOnSuccess(objWithEcar)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
         metrics.incCounter(config.questionPublishSuccessEventCount)
-        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Question publishing completed successfully for : ${data.identifier}"))
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature:${featureId} | Question publishing completed successfully for : ${data.identifier}"))
       } else {
         saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
         metrics.incCounter(config.questionPublishFailedEventCount)
-        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Question publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString(", ")} "))
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature:${featureId} | Question publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString(", ")} "))
       }
     } catch {
       case e: Throwable => {
