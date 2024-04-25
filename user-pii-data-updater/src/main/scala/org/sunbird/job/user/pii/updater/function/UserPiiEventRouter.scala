@@ -1,6 +1,5 @@
 package org.sunbird.job.user.pii.updater.function
 
-import org.apache.commons.lang3.StringUtils
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.slf4j.LoggerFactory
@@ -35,7 +34,6 @@ class UserPiiEventRouter(config: UserPiiUpdaterConfig) extends BaseProcessFuncti
       case "ownership-transfer" => "OwnershipTransfer"
       case _ => event.action
     }
-      if(StringUtils.equalsIgnoreCase(event.action, "delete-user")) "DeleteUser" else if()
     val entryMsg = s"""Feature:${feature} | Received Event For ${feature} | Event : ${event}"""
     logger.info(LoggerUtil.getEntryLogs(config.jobName, requestId, entryMsg))
     if (event.validEvent()) {
