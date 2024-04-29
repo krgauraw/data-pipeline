@@ -37,26 +37,26 @@ class PublishEventRouter(config: QuestionSetPublishConfig) extends BaseProcessFu
 			case "QuestionSet" | "QuestionSetImage" => "QuestionsetPublish"
 			case _ => event.action
 		}
-		val entryMsg = s"""Feature:${feature} | Received Event For Publish. | Event : ${event}"""
+		val entryMsg = s"""Feature: ${feature} | Received Event For Publish. | Event : ${event}"""
 		logger.info(LoggerUtil.getEntryLogs(config.jobName, requestId, entryMsg))
 		if (event.validEvent()) {
 			event.objectType match {
 				case "Question" | "QuestionImage" => {
-					logger.info(s"Feature:${feature} | PublishEventRouter :: Sending Question For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
+					logger.info(s"Feature: ${feature} | PublishEventRouter :: Sending Question For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
 					context.output(config.questionPublishOutTag, PublishMetadata(event.getEventContext(), event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case "QuestionSet" | "QuestionSetImage" => {
-					logger.info(s"Feature:${feature} | PublishEventRouter :: Sending QuestionSet For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
+					logger.info(s"Feature: ${feature} | PublishEventRouter :: Sending QuestionSet For Publish Having Identifier: ${event.objectId} | requestId : ${requestId}")
 					context.output(config.questionSetPublishOutTag, PublishMetadata(event.getEventContext(), event.objectId, event.objectType, event.mimeType, event.pkgVersion, event.publishType, event.lastPublishedBy, event.schemaVersion))
 				}
 				case _ => {
 					metrics.incCounter(config.skippedEventCount)
-					val exitMsg = s"""Feature:${feature} | Invalid Object Type Received For Publish.| Identifier : ${event.objectId} , objectType : ${event.objectType}"""
+					val exitMsg = s"""Feature: ${feature} | Invalid Object Type Received For Publish.| Identifier : ${event.objectId} , objectType : ${event.objectType}"""
 					logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
 				}
 			}
 		} else {
-			val exitMsg = s"""Feature:${feature} | Event skipped for identifier: ${event.objectId} , objectType: ${event.objectType}"""
+			val exitMsg = s"""Feature: ${feature} | Event skipped for identifier: ${event.objectId} , objectType: ${event.objectType}"""
 			logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
 			metrics.incCounter(config.skippedEventCount)
 		}
