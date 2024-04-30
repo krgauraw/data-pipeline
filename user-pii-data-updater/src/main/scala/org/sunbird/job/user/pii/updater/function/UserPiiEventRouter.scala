@@ -34,26 +34,26 @@ class UserPiiEventRouter(config: UserPiiUpdaterConfig) extends BaseProcessFuncti
       case "ownership-transfer" => "OwnershipTransfer"
       case _ => event.action
     }
-    val entryMsg = s"""Feature:${feature} | Received Event For ${feature} | Event : ${event}"""
+    val entryMsg = s"""Feature: ${feature} | Received Event For ${feature} | Event : ${event}"""
     logger.info(LoggerUtil.getEntryLogs(config.jobName, requestId, entryMsg))
     if (event.validEvent()) {
       event.action match {
         case "delete-user" => {
-          logger.info(s"Feature:${feature} | UserPiiEventRouter :: Sending Event For User Pii Data Cleanup having userId: ${event.userId} | requestId: ${requestId}")
+          logger.info(s"Feature: ${feature} | UserPiiEventRouter :: Sending Event For User Pii Data Cleanup having userId: ${event.userId} | requestId: ${requestId}")
           context.output(config.userPiiEventOutTag, UserPiiEvent(event.getEventContext(), event.eventId, event.objType, event.userId, event.userName, event.orgAdminUserId))
         }
         case "ownership-transfer" => {
-          logger.info(s"Feature:${feature} | UserPiiEventRouter :: Sending Event For Ownership Transfer having from_userId: ${event.fromUserId} & to_userId: ${event.toUserId} | requestId: ${requestId}")
+          logger.info(s"Feature: ${feature} | UserPiiEventRouter :: Sending Event For Ownership Transfer having from_userId: ${event.fromUserId} & to_userId: ${event.toUserId} | requestId: ${requestId}")
           context.output(config.ownershipTransferEventOutTag, OwnershipTransferEvent(event.getEventContext(), event.eventId, event.objType, event.fromUserProfile, event.toUserProfile, event.assetInformation, event.fromUserId, event.toUserId))
         }
         case _ => {
           metrics.incCounter(config.skippedEventCount)
-          val exitMsg = s"""Feature:${feature} | Invalid Action Received in the event with mid: ${event.eventId}.| eventId : ${event.eventId} , objectType : ${event.objType}"""
+          val exitMsg = s"""Feature: ${feature} | Invalid Action Received in the event with mid: ${event.eventId}.| eventId : ${event.eventId} , objectType : ${event.objType}"""
           logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
         }
       }
     } else {
-      val exitMsg = s"""Feature:${feature} | Event Validation Failed. Event skipped for user id: ${event.userId} , objectType: ${event.objType}"""
+      val exitMsg = s"""Feature: ${feature} | Event Validation Failed. Event skipped for user id: ${event.userId} , objectType: ${event.objType}"""
       logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, exitMsg))
       metrics.incCounter(config.skippedEventCount)
     }
