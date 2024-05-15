@@ -61,6 +61,12 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
   def getEventContext(): Map[String, AnyRef] = {
     val mid: String = readOrDefault[String]("mid", "")
     val requestId: String = readOrDefault[String]("edata.requestId", "")
-    Map("mid" -> mid, "requestId" -> requestId)
+    val defaultFeature = readOrDefault[String]("edata.action", "") match {
+      case "delete-user" => "DeleteUser"
+      case "ownership-transfer" => "OwnershipTransfer"
+      case _ => readOrDefault[String]("edata.action", "")
+    }
+    val featureName: String = readOrDefault[String]("edata.featureName", defaultFeature)
+    Map("mid" -> mid, "requestId" -> requestId, "featureName" -> featureName)
   }
 }

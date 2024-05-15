@@ -36,7 +36,6 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
   private[this] val logger = LoggerFactory.getLogger(classOf[QuestionSetPublishFunction])
   val mapType: Type = new TypeToken[java.util.Map[String, AnyRef]]() {}.getType
   val liveStatus = List("Live", "Unlisted")
-  val featureId = "QuestionsetPublish"
 
   @transient var ec: ExecutionContext = _
   @transient var cache: DataCache = _
@@ -66,8 +65,9 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
 
   override def processElement(data: PublishMetadata, context: ProcessFunction[PublishMetadata, String]#Context, metrics: Metrics): Unit = {
     val requestId = data.eventContext.getOrElse("requestId", "").asInstanceOf[String]
+    val featureName = data.eventContext.getOrElse("featureName", "").asInstanceOf[String]
     try {
-      logger.info(s"Feature: ${featureId} | QuestionSet publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
+      logger.info(s"Feature: ${featureName} | QuestionSet publishing started for :  ${data.identifier}  | requestId : ${requestId} ")
       metrics.incCounter(config.questionSetPublishEventCount)
       val definition: ObjectDefinition = definitionCache.getDefinition(data.objectType, data.schemaVersion, config.definitionBasePath)
       val readerConfig = ExtDataConfig(config.questionSetKeyspaceName, config.questionSetTableName, definition.getExternalPrimaryKey, definition.getExternalProps)
@@ -91,32 +91,32 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
         // Filter out questions having visibility parent (which need to be published)
         val childQuestions: List[ObjectData] = qList.filter(q => isValidChildQuestion(q, obj.getString("createdBy", "")))
         //TODO: Remove below statement
-        childQuestions.foreach(ch => logger.info(s"Feature: ${featureId} | child questions which are going to be published.  identifier : ${ch.identifier} , visibility: ${ch.getString("visibility", "")} , createdBy: ${ch.getString("createdBy", "")}"))
+        childQuestions.foreach(ch => logger.info(s"Feature: ${featureName} | child questions which are going to be published.  identifier : ${ch.identifier} , visibility: ${ch.getString("visibility", "")} , createdBy: ${ch.getString("createdBy", "")}"))
         // Publish Child Questions
-        QuestionPublishUtil.publishQuestions(obj.identifier, childQuestions, data.pkgVersion, data.lastPublishedBy)(ec, neo4JUtil, cassandraUtil, qReaderConfig, cloudStorageUtil, definitionCache, definitionConfig, config, httpUtil)
+        QuestionPublishUtil.publishQuestions(obj.identifier, childQuestions, data.pkgVersion, data.lastPublishedBy)(ec, neo4JUtil, cassandraUtil, qReaderConfig, cloudStorageUtil, definitionCache, definitionConfig, config, httpUtil, data.eventContext)
         val pubMsgs: List[String] = isChildrenPublished(childQuestions, data.publishType, qReaderConfig)
         if (pubMsgs.isEmpty) {
           // Enrich Object as well as hierarchy
           val enrichedObj = enrichObject(obj)(neo4JUtil, cassandraUtil, readerConfig, cloudStorageUtil, config, definitionCache, definitionConfig)
-          logger.info(s"Feature: ${featureId} | processElement ::: object enrichment done for ${obj.identifier} | requestId: ${requestId}")
-          logger.info(s"Feature: ${featureId} | processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
-          logger.info(s"Feature: ${featureId} | processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
+          logger.info(s"Feature: ${featureName} | processElement ::: object enrichment done for ${obj.identifier} | requestId: ${requestId}")
+          logger.info(s"Feature: ${featureName} | processElement :::  obj metadata post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.metadata))
+          logger.info(s"Feature: ${featureName} | processElement :::  obj hierarchy post enrichment :: " + ScalaJsonUtil.serialize(enrichedObj.hierarchy.get))
           // Generate ECAR
-          val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil)
+          val objWithEcar = generateECAR(enrichedObj, pkgTypes)(ec, neo4JUtil, cloudStorageUtil, config, definitionCache, definitionConfig, httpUtil, data.eventContext)
           // Generate PDF URL
-          val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil)
+          val updatedObj = generatePreviewUrl(objWithEcar, qList)(httpUtil, cloudStorageUtil, data.eventContext)
           saveOnSuccess(updatedObj)(neo4JUtil, cassandraUtil, readerConfig, definitionCache, definitionConfig)
-          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureId} | QuestionSet publishing completed successfully for : ${data.identifier}"))
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureName} | QuestionSet publishing completed successfully for : ${data.identifier}"))
           metrics.incCounter(config.questionSetPublishSuccessEventCount)
         } else {
           saveOnFailure(obj, pubMsgs, data.pkgVersion)(neo4JUtil)
           metrics.incCounter(config.questionSetPublishFailedEventCount)
-          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureId} | QuestionSet publishing failed for : ${data.identifier} | Errors: ${pubMsgs.mkString("; ")}"))
+          logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureName} | QuestionSet publishing failed for : ${data.identifier} | Errors: ${pubMsgs.mkString("; ")}"))
         }
       } else {
         saveOnFailure(obj, messages, data.pkgVersion)(neo4JUtil)
         metrics.incCounter(config.questionSetPublishFailedEventCount)
-        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureId} | QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString("; ")} "))
+        logger.info(LoggerUtil.getExitLogs(config.jobName, requestId, s"Feature: ${featureName} | QuestionSet publishing failed for : ${data.identifier} because of data validation failed. | Errors: ${messages.mkString("; ")} "))
       }
     } catch {
       case e: Throwable => {
@@ -145,18 +145,20 @@ class QuestionSetPublishFunction(config: QuestionSetPublishConfig, httpUtil: Htt
     messages.toList
   }
 
-  def generateECAR(data: ObjectData, pkgTypes: List[String])(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil): ObjectData = {
+  def generateECAR(data: ObjectData, pkgTypes: List[String])(implicit ec: ExecutionContext, neo4JUtil: Neo4JUtil, cloudStorageUtil: CloudStorageUtil, config: PublishConfig, defCache: DefinitionCache, defConfig: DefinitionConfig, httpUtil: HttpUtil, eventContext: Map[String, AnyRef]): ObjectData = {
+    val featureName = eventContext.getOrElse("featureName", "").asInstanceOf[String]
     val ecarMap: Map[String, String] = generateEcar(data, pkgTypes)
     val variants: java.util.Map[String, java.util.Map[String, String]] = ecarMap.map { case (key, value) => key.toLowerCase -> Map[String, String]("ecarUrl" -> value, "size" -> httpUtil.getSize(value).toString).asJava }.asJava
-    logger.info(s"Feature: ${featureId} | QuestionSetPublishFunction ::: generateECAR ::: ecar map ::: " + ecarMap)
+    logger.info(s"Feature: ${featureName} | QuestionSetPublishFunction ::: generateECAR ::: ecar map ::: " + ecarMap)
     val meta: Map[String, AnyRef] = Map("downloadUrl" -> ecarMap.getOrElse(EcarPackageType.FULL.toString, ""), "variants" -> variants, "size" -> httpUtil.getSize(ecarMap.getOrElse(EcarPackageType.FULL.toString, "")).asInstanceOf[AnyRef])
     new ObjectData(data.identifier, data.metadata ++ meta, data.extData, data.hierarchy)
   }
 
-  def generatePreviewUrl(data: ObjectData, qList: List[ObjectData])(implicit httpUtil: HttpUtil, cloudStorageUtil: CloudStorageUtil): ObjectData = {
+  def generatePreviewUrl(data: ObjectData, qList: List[ObjectData])(implicit httpUtil: HttpUtil, cloudStorageUtil: CloudStorageUtil, eventContext: Map[String, AnyRef]): ObjectData = {
+    val featureName = eventContext.getOrElse("featureName", "").asInstanceOf[String]
     val (pdfUrl, previewUrl) = getPdfFileUrl(qList, data, "questionSetTemplate.vm", config.printServiceBaseUrl, System.currentTimeMillis().toString)(httpUtil, cloudStorageUtil)
-    logger.info(s"Feature: ${featureId} | generatePreviewUrl ::: finalPdfUrl ::: " + pdfUrl.getOrElse(""))
-    logger.info(s"Feature: ${featureId} | generatePreviewUrl ::: finalPreviewUrl ::: " + previewUrl.getOrElse(""))
+    logger.info(s"Feature: ${featureName} | generatePreviewUrl ::: finalPdfUrl ::: " + pdfUrl.getOrElse(""))
+    logger.info(s"Feature: ${featureName} | generatePreviewUrl ::: finalPreviewUrl ::: " + previewUrl.getOrElse(""))
     new ObjectData(data.identifier, data.metadata ++ Map("previewUrl" -> previewUrl.getOrElse(""), "pdfUrl" -> pdfUrl.getOrElse("")), data.extData, data.hierarchy)
   }
 
