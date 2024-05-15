@@ -32,11 +32,7 @@ class PublishEventRouter(config: QuestionSetPublishConfig) extends BaseProcessFu
 	override def processElement(event: Event, context: ProcessFunction[Event, String]#Context, metrics: Metrics): Unit = {
 		metrics.incCounter(config.totalEventsCount)
 		val requestId = event.getEventContext().getOrElse("requestId", "").asInstanceOf[String]
-		val feature = event.objectType match {
-			case "Question" | "QuestionImage" => "QuestionPublish"
-			case "QuestionSet" | "QuestionSetImage" => "QuestionsetPublish"
-			case _ => event.action
-		}
+		val feature = event.getEventContext().getOrElse("featureName", "").asInstanceOf[String]
 		val entryMsg = s"""Feature: ${feature} | Received Event For Publish. | Event : ${event}"""
 		logger.info(LoggerUtil.getEntryLogs(config.jobName, requestId, entryMsg))
 		if (event.validEvent()) {
