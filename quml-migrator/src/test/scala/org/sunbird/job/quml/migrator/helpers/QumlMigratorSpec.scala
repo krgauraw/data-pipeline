@@ -1,7 +1,7 @@
 package org.sunbird.job.quml.migrator.helpers
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 import org.sunbird.job.domain.`object`.ObjectDefinition

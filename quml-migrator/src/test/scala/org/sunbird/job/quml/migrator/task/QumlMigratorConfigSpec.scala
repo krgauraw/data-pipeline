@@ -1,7 +1,7 @@
 package org.sunbird.job.quml.migrator.task
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 

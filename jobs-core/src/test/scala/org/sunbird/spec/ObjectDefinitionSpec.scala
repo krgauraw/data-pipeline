@@ -1,6 +1,6 @@
 package org.sunbird.spec
 
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 import org.sunbird.job.domain.`object`.ObjectDefinition
