@@ -18,7 +18,7 @@ class ObjectUpdaterSpec extends FlatSpec with BeforeAndAfterAll with Matchers wi
   implicit val mockCassandraUtil: CassandraUtil = mock[CassandraUtil](Mockito.withSettings().serializable())
   implicit val readerConfig = ExtDataConfig("test", "test")
   implicit lazy val defCache: DefinitionCache = new DefinitionCache()
-  implicit val definitionConfig: DefinitionConfig = DefinitionConfig(Map("itemset" -> "2.0"), "https://sunbirddevbbpublic.blob.core.windows.net/sunbird-content-staging-inquiry/schemas/local")
+  implicit val definitionConfig: DefinitionConfig = DefinitionConfig(Map("itemset" -> "2.0"), "https://sunbirddev.blob.core.windows.net/sunbird-content-dev/schemas/local")
 
 
   override protected def beforeAll(): Unit = {
